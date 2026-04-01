@@ -1,6 +1,6 @@
 # Tower Tax
 
-Tower Tax is a slow, low-pressure tower defense game submitted to the (48th gm(48) GameMaker game jam)[https://gm48.net/game-jams/equivalent-exchange/games/tower-tax].
+Tower Tax is a slow, low-pressure tower defense game submitted to the [48th gm(48) GameMaker game jam](https://gm48.net/game-jams/equivalent-exchange/games/tower-tax).
 
 The twist is simple: your Life is both your health bar and your build currency.
 
