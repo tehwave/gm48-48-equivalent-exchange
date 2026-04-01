@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_wave_utils",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_wave_utils",
+  "parent":{
+    "name":"gm48-48-equivalent-exchange",
+    "path":"gm48-48-equivalent-exchange.yyp",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

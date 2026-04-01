@@ -1,0 +1,21 @@
+{
+  "$GMPath":"",
+  "%Name":"path_main",
+  "closed":false,
+  "kind":0,
+  "name":"path_main",
+  "parent":{
+    "name":"gm48-48-equivalent-exchange",
+    "path":"gm48-48-equivalent-exchange.yyp",
+  },
+  "points":[
+    {"speed":100.0,"x":-64.0,"y":288.0,},
+    {"speed":100.0,"x":192.0,"y":288.0,},
+    {"speed":100.0,"x":1024.0,"y":288.0,},
+    {"speed":100.0,"x":1024.0,"y":544.0,},
+    {"speed":100.0,"x":-64.0,"y":544.0,},
+  ],
+  "precision":4,
+  "resourceType":"GMPath",
+  "resourceVersion":"2.0",
+}

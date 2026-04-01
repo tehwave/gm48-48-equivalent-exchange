@@ -1,0 +1,26 @@
+{
+  "$GMSound":"v2",
+  "%Name":"WAV_Fireball_Launch_1",
+  "audioGroupId":{
+    "name":"audiogroup_default",
+    "path":"audiogroups/audiogroup_default",
+  },
+  "bitDepth":1,
+  "channelFormat":0,
+  "compression":0,
+  "compressionQuality":4,
+  "conversionMode":0,
+  "duration":3.0,
+  "exportDir":"",
+  "name":"WAV_Fireball_Launch_1",
+  "parent":{
+    "name":"gm48-48-equivalent-exchange",
+    "path":"gm48-48-equivalent-exchange.yyp",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"WAV_Fireball_Launch_1.wav",
+  "volume":1.0,
+}

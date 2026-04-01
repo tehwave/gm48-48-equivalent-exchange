@@ -1,0 +1,151 @@
+/// @description Draw enemy sprite and HP bar overlay.
+
+/// @type {Real}
+var draw_x = x + enemy_spawn_offset_x;
+/// @type {Real}
+var draw_y = y + enemy_spawn_offset_y;
+
+if (is_dead) {
+	/// @type {Real}
+	var death_progress = 1 - (enemy_death_vfx_timer / max(1, enemy_death_vfx_total_steps));
+	/// @type {Real}
+	var burst_radius = 4 + (death_progress * 18);
+	/// @type {Real}
+	var core_radius = max(1, 7 - (death_progress * 6));
+
+	draw_set_alpha(1 - death_progress);
+	if (global.debug_mode) {
+		draw_set_colour(c_orange);
+		draw_circle(draw_x, draw_y - 2, burst_radius, true);
+		draw_set_colour(c_yellow);
+		draw_circle(draw_x, draw_y - 2, core_radius, false);
+	}
+	draw_set_alpha(1);
+	exit;
+}
+
+if (sprite_index != -1) {
+	/// @type {Real}
+	var bounce_phase = (current_time * 0.02) + (x * 0.17) + (y * 0.11);
+	/// @type {Real}
+	var bounce_offset_x = cos(bounce_phase * 0.6) * 1.25;
+	/// @type {Real}
+	var bounce_scale_y = 1 + (sin(bounce_phase) * 0.06);
+	/// @type {Bool}
+	var has_slow_or_freeze = (enemy_slow_timer_steps > 0) || (enemy_freeze_timer_steps > 0);
+	/// @type {Real}
+	var slow_tint_strength = clamp(1 - enemy_slow_factor, 0.12, 0.55);
+	/// @type {Real}
+	var freeze_tint_strength = (enemy_freeze_timer_steps > 0) ? 0.65 : 0;
+	/// @type {Real}
+	var tint_mix = max(slow_tint_strength, freeze_tint_strength);
+	/// @type {Real}
+	var tint_r = clamp(255 - (140 * tint_mix), 0, 255);
+	/// @type {Real}
+	var tint_g = clamp(255 - (45 * tint_mix), 0, 255);
+	/// @type {Real}
+	var tint_b = 255;
+	/// @type {Real}
+	var sprite_tint = has_slow_or_freeze ? make_colour_rgb(tint_r, tint_g, tint_b) : c_white;
+	/// @type {Real}
+	var boss_draw_scale = (object_index == obj_enemy_boss) ? 2 : 1;
+
+	// Draw with a per-instance visual offset while gameplay coordinates stay on-path.
+	draw_sprite_ext(
+		sprite_index,
+		image_index,
+		draw_x + bounce_offset_x,
+		draw_y,
+		image_xscale * boss_draw_scale,
+		image_yscale * bounce_scale_y * boss_draw_scale,
+		image_angle,
+		sprite_tint,
+		image_alpha
+	);
+}
+
+if (enemy_burn_timer_steps > 0) {
+	/// @type {Real}
+	var burn_pulse = 0.75 + (0.25 * sin(current_time * 0.03 + (x * 0.08)));
+	/// @type {Real}
+	var burn_radius = enemy_draw_radius + (5 * burn_pulse);
+
+	draw_set_alpha(0.35);
+	draw_set_colour(c_orange);
+	if (global.debug_mode) {
+		draw_circle(draw_x, draw_y - 2, burn_radius, false);
+	}
+	draw_set_alpha(1);
+}
+
+if (enemy_slow_timer_steps > 0) {
+	/// @type {Real}
+	var slow_intensity = clamp(1 - enemy_slow_factor, 0.05, 0.6);
+	/// @type {Real}
+	// Use position-based phase seed for deterministic sparkle motion without relying on runtime instance ids.
+	var slow_phase = (current_time * 0.018) + (draw_x * 0.061) + (draw_y * 0.047);
+	/// @type {Real}
+	var slow_ring_radius = enemy_draw_radius + 3 + (2.5 * (0.5 + (0.5 * sin(slow_phase))));
+	/// @type {Real}
+	var slow_alpha = 0.20 + (0.40 * slow_intensity);
+
+	gpu_set_blendmode(bm_add);
+	draw_set_alpha(slow_alpha);
+	draw_set_colour(c_aqua);
+	if (global.debug_mode) {
+		draw_circle(draw_x, draw_y - 2, slow_ring_radius, false);
+	}
+
+	/// @type {Real}
+	var sparkle_orbit_radius = enemy_draw_radius + 5;
+	/// @type {Real}
+	var sparkle_angle_a = slow_phase * 110;
+	/// @type {Real}
+	var sparkle_angle_b = sparkle_angle_a + 180;
+
+	draw_point(
+		draw_x + lengthdir_x(sparkle_orbit_radius, sparkle_angle_a),
+		draw_y - 2 + lengthdir_y(sparkle_orbit_radius, sparkle_angle_a)
+	);
+	draw_point(
+		draw_x + lengthdir_x(sparkle_orbit_radius, sparkle_angle_b),
+		draw_y - 2 + lengthdir_y(sparkle_orbit_radius, sparkle_angle_b)
+	);
+
+	gpu_set_blendmode(bm_normal);
+	draw_set_alpha(1);
+}
+
+if (enemy_freeze_timer_steps > 0) {
+	/// @type {Real}
+	var freeze_phase = (current_time * 0.025) + (draw_x * 0.053) + (draw_y * 0.041);
+	/// @type {Real}
+	var freeze_ring_radius = enemy_draw_radius + 5 + (1.5 * sin(freeze_phase));
+	/// @type {Real}
+	var freeze_alpha = 0.22 + (0.10 * sin(freeze_phase * 1.8));
+
+	gpu_set_blendmode(bm_add);
+	draw_set_alpha(freeze_alpha);
+	draw_set_colour(c_blue);
+	if (global.debug_mode) {
+		draw_circle(draw_x, draw_y - 2, freeze_ring_radius, false);
+	}
+	gpu_set_blendmode(bm_normal);
+	draw_set_alpha(1);
+}
+
+/// @type {Real}
+var hp_ratio = clamp(enemy_hp / max(1, enemy_hp_max), 0, 1);
+
+draw_set_colour(c_black);
+draw_rectangle(draw_x - 12, draw_y - enemy_draw_radius - 10, draw_x + 12, draw_y - enemy_draw_radius - 6, false);
+draw_set_colour(c_lime);
+draw_rectangle(draw_x - 12, draw_y - enemy_draw_radius - 10, draw_x - 12 + (24 * hp_ratio), draw_y - enemy_draw_radius - 6, false);
+
+if (global.debug_mode) {
+	// Debug anchor: this cross is the exact instance x/y used by path movement.
+	draw_set_colour(c_fuchsia);
+	draw_line(x - 2, y, x + 2, y);
+	draw_line(x, y - 2, x, y + 2);
+	draw_point(x, y);
+}

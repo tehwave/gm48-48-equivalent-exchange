@@ -1,0 +1,1 @@
+/// @description Intentionally empty. Economy/leak transactions are handled in Step with guards.

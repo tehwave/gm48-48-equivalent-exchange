@@ -1,0 +1,26 @@
+{
+  "$GMSound":"v2",
+  "%Name":"WAV_Electric_Discharge_2",
+  "audioGroupId":{
+    "name":"audiogroup_default",
+    "path":"audiogroups/audiogroup_default",
+  },
+  "bitDepth":1,
+  "channelFormat":0,
+  "compression":0,
+  "compressionQuality":4,
+  "conversionMode":0,
+  "duration":2.25,
+  "exportDir":"",
+  "name":"WAV_Electric_Discharge_2",
+  "parent":{
+    "name":"gm48-48-equivalent-exchange",
+    "path":"gm48-48-equivalent-exchange.yyp",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"WAV_Electric_Discharge_2.wav",
+  "volume":1.0,
+}
