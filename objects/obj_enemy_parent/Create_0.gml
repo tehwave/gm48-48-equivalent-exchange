@@ -45,6 +45,7 @@ enemy_freeze_timer_steps = 0;
 enemy_burn_damage_per_tick = 0;
 enemy_burn_timer_steps = 0;
 enemy_burn_tick_steps_remaining = 0;
+enemy_last_damage_source = noone;
 enemy_spawn_offset_x = 0;
 enemy_spawn_offset_y = 0;
 enemy_call_steps_remaining = irandom_range(

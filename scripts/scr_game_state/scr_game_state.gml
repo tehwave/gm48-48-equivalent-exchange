@@ -5,6 +5,63 @@ function game_is_running() {
   return global.game_state == GAME_STATE_RUNNING;
 }
 
+/// @param {Real} px
+/// @param {Real} py
+/// @param {Real} pw
+/// @param {Real} ph
+/// @param {Real} bg_alpha
+/// @param {Real} corner_radius
+/// @returns {Void}
+function scr_draw_rounded_panel(px, py, pw, ph, bg_alpha, corner_radius) {
+  draw_set_alpha(clamp(bg_alpha, 0, 1));
+  draw_set_colour(c_black);
+  draw_roundrect_ext(px, py, px + pw, py + ph, corner_radius, corner_radius, false);
+  draw_set_alpha(1);
+  draw_set_colour(c_white);
+}
+
+/// @param {Real} tower_type_index
+/// @returns {Struct}
+function scr_get_tower_description(tower_type_index) {
+  /// @type {Struct}
+  var tower_description = {
+    name : "Unknown",
+    damage_type : "-",
+    special : "-",
+    hp_cost : TOWER_PLACEMENT_HP_COST
+  };
+
+  switch (tower_type_index) {
+    case 0:
+      tower_description.name = "Arrow";
+      tower_description.damage_type = "Single target";
+      tower_description.special = "Fast direct damage";
+      break;
+    case 1:
+      tower_description.name = "Slow";
+      tower_description.damage_type = "Single target";
+      tower_description.special = "Applies movement slow";
+      break;
+    case 2:
+      tower_description.name = "Cannon";
+      tower_description.damage_type = "Splash";
+      tower_description.special = "Area explosion";
+      break;
+    case 3:
+      tower_description.name = "Flamer";
+      tower_description.damage_type = "Cone";
+      tower_description.special = "Applies burn over time";
+      break;
+    case 4:
+      tower_description.name = "Freeze";
+      tower_description.damage_type = "Single target";
+      tower_description.special = "Temporarily freezes";
+      break;
+  }
+
+  return tower_description;
+}
+
 /// @param {Real} amount
 /// @returns {Bool}
 function game_try_spend_hp(amount) {
@@ -113,14 +170,35 @@ function game_register_leak(leak_damage) {
 
 /// @param {Id.Instance} enemy_instance
 /// @param {Real} damage
+/// @param {Id.Instance|Real} source_tower_id
 /// @returns {Bool}
-function enemy_take_damage(enemy_instance, damage) {
+function enemy_take_damage(enemy_instance, damage, source_tower_id) {
   if (!instance_exists(enemy_instance)) return false;
   if (damage <= 0) return false;
+
+  if (argument_count < 3) {
+    source_tower_id = noone;
+  }
+
+  /// @type {Bool}
+  var source_is_valid = instance_exists(source_tower_id);
+  if (source_is_valid) {
+    /// @type {Asset.GMObject|Real}
+    var source_object = source_tower_id.object_index;
+    source_is_valid = (source_object == obj_tower_parent || object_is_ancestor(source_object, obj_tower_parent));
+  }
+
+  /// @type {Bool}
+  var source_is_valid_local = source_is_valid;
+  /// @type {Id.Instance|Real}
+  var source_tower_id_local = source_tower_id;
 
   with (enemy_instance) {
     if (is_dead || has_leaked) return false;
     enemy_hp -= damage;
+    if (source_is_valid_local) {
+      enemy_last_damage_source = source_tower_id_local;
+    }
   }
 
   return true;

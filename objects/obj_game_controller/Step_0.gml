@@ -10,6 +10,14 @@ if (global.enemy_call_sfx_cooldown_steps_remaining > 0) {
   global.enemy_call_sfx_cooldown_steps_remaining -= 1;
 }
 
+if (global.confirm_timer_steps > 0) {
+  global.confirm_timer_steps -= 1;
+  if (global.confirm_timer_steps <= 0) {
+    global.confirm_action = "";
+    global.confirm_timer_steps = 0;
+  }
+}
+
 if (global.game_state == GAME_STATE_RUNNING) {
   global.birdsong_steps_remaining -= 1;
   if (global.birdsong_steps_remaining <= 0) {
@@ -50,48 +58,6 @@ if (keyboard_check_pressed(vk_f3)) {
   global.debug_mode = !global.debug_mode;
 }
 
-if (keyboard_check_pressed(ord("Q"))) {
-  global.selected_tower_type = (global.selected_tower_type + 4) mod 5;
-}
-
-if (keyboard_check_pressed(ord("E"))) {
-  global.selected_tower_type = (global.selected_tower_type + 1) mod 5;
-}
-
-if (keyboard_check_pressed(ord("1"))) global.selected_tower_type = 0;
-if (keyboard_check_pressed(ord("2"))) global.selected_tower_type = 1;
-if (keyboard_check_pressed(ord("3"))) global.selected_tower_type = 2;
-if (keyboard_check_pressed(ord("4"))) global.selected_tower_type = 3;
-if (keyboard_check_pressed(ord("5"))) global.selected_tower_type = 4;
-
-if (mouse_check_button_pressed(mb_right)) {
-  global.selected_tower_id = noone;
-}
-
-if (mouse_check_button_pressed(mb_left)) {
-  /// @type {Id.Instance|Real}
-  var clicked_tower_id = instance_position(mouse_x, mouse_y, obj_tower_parent);
-  if (!instance_exists(clicked_tower_id)) {
-    global.selected_tower_id = noone;
-  }
-}
-
-if (keyboard_check_pressed(ord("U"))) {
-  if (instance_exists(global.selected_tower_id)) {
-    with (global.selected_tower_id) {
-      event_user(0);
-    }
-  }
-}
-
-if (keyboard_check_pressed(ord("X"))) {
-  if (game_delete_selected_tower_refund_life()) {
-    audio_play_variation(WAV_Magical_Sparkle_Disappate_1, WAV_Magical_Sparkle_Disappate_2, AUDIO_GAIN_UI, 0.96, 1.06);
-  } else if (game_is_running()) {
-    audio_play_variation(WAV_Snake_Hiss_1, WAV_Snake_Hiss_2, AUDIO_GAIN_UI * 0.42, 0.95, 1.05);
-  }
-}
-
 if (global.game_state == GAME_STATE_GAME_OVER || global.game_state == GAME_STATE_VICTORY) {
   if (global.run_end_time_ms < 0) {
     global.run_end_time_ms = current_time;
@@ -104,7 +70,173 @@ if (global.game_state == GAME_STATE_GAME_OVER || global.game_state == GAME_STATE
 }
 
 if (!game_is_running()) {
+  global.build_mode = false;
+  global.build_base_id = noone;
+  global.confirm_action = "";
+  global.confirm_timer_steps = 0;
   exit;
+}
+
+/// @type {Bool}
+var key_q = keyboard_check_pressed(ord("Q"));
+/// @type {Bool}
+var key_e = keyboard_check_pressed(ord("E"));
+/// @type {Bool}
+var key_1 = keyboard_check_pressed(ord("1"));
+/// @type {Bool}
+var key_2 = keyboard_check_pressed(ord("2"));
+/// @type {Bool}
+var key_3 = keyboard_check_pressed(ord("3"));
+/// @type {Bool}
+var key_4 = keyboard_check_pressed(ord("4"));
+/// @type {Bool}
+var key_5 = keyboard_check_pressed(ord("5"));
+/// @type {Bool}
+var key_u = keyboard_check_pressed(ord("U"));
+/// @type {Bool}
+var key_x = keyboard_check_pressed(ord("X"));
+/// @type {Bool}
+var key_enter = keyboard_check_pressed(vk_enter);
+/// @type {Bool}
+var key_escape = keyboard_check_pressed(vk_escape);
+/// @type {Bool}
+var mouse_left = mouse_check_button_pressed(mb_left);
+/// @type {Bool}
+var mouse_right = mouse_check_button_pressed(mb_right);
+
+if (global.build_mode && !instance_exists(global.build_base_id)) {
+  global.build_mode = false;
+  global.build_base_id = noone;
+}
+
+if (mouse_right) {
+  if (global.build_mode) {
+    global.build_mode = false;
+    global.build_base_id = noone;
+  } else {
+    global.selected_tower_id = noone;
+  }
+  global.confirm_action = "";
+  global.confirm_timer_steps = 0;
+}
+
+if (global.build_mode) {
+  if (key_q) global.selected_tower_type = (global.selected_tower_type + 4) mod 5;
+  if (key_e) global.selected_tower_type = (global.selected_tower_type + 1) mod 5;
+  if (key_1) global.selected_tower_type = 0;
+  if (key_2) global.selected_tower_type = 1;
+  if (key_3) global.selected_tower_type = 2;
+  if (key_4) global.selected_tower_type = 3;
+  if (key_5) global.selected_tower_type = 4;
+
+  if (key_escape) {
+    global.build_mode = false;
+    global.build_base_id = noone;
+  }
+
+  /// @type {Id.Instance|Real}
+  var target_base_id = global.build_base_id;
+
+  if (mouse_left) {
+    /// @type {Id.Instance|Real}
+    var clicked_base_id = instance_position(mouse_x, mouse_y, obj_tower_base);
+    if (instance_exists(clicked_base_id) && !clicked_base_id.occupied) {
+      target_base_id = clicked_base_id;
+      global.build_base_id = clicked_base_id;
+    }
+  }
+
+  /// @type {Bool}
+  var build_confirmed = key_enter;
+  if (mouse_left && instance_exists(target_base_id)) {
+    /// @type {Id.Instance|Real}
+    var clicked_confirm_base = instance_position(mouse_x, mouse_y, obj_tower_base);
+    build_confirmed = build_confirmed || (clicked_confirm_base == target_base_id);
+  }
+
+  if (build_confirmed && instance_exists(target_base_id) && !target_base_id.occupied) {
+    /// @type {Asset.GMObject|Real}
+    var tower_object = scr_get_selected_tower_object();
+    if (tower_object == noone) {
+      audio_play_variation(WAV_Snake_Hiss_1, WAV_Snake_Hiss_2, AUDIO_GAIN_UI * 0.42, 0.95, 1.05);
+    } else if (!game_try_spend_hp(TOWER_PLACEMENT_HP_COST)) {
+      audio_play_variation(WAV_Snake_Hiss_1, WAV_Snake_Hiss_2, AUDIO_GAIN_UI * 0.42, 0.95, 1.05);
+    } else {
+      target_base_id.tower_instance_id = instance_create_layer(target_base_id.x, target_base_id.y, "Instances", tower_object, {
+        base_owner_id : target_base_id.id
+      });
+      target_base_id.occupied = true;
+      global.selected_tower_id = target_base_id.tower_instance_id;
+      global.build_mode = false;
+      global.build_base_id = noone;
+      audio_play_variation(WAV_Small_Spark_1, WAV_Small_Spark_2, AUDIO_GAIN_UI, 0.97, 1.06);
+    }
+  }
+
+  global.confirm_action = "";
+  global.confirm_timer_steps = 0;
+} else {
+  if (mouse_left) {
+    /// @type {Id.Instance|Real}
+    var clicked_tower_id = instance_position(mouse_x, mouse_y, obj_tower_parent);
+    if (!instance_exists(clicked_tower_id)) {
+      global.selected_tower_id = noone;
+      global.confirm_action = "";
+      global.confirm_timer_steps = 0;
+    }
+  }
+
+  if (key_u) {
+    if (!instance_exists(global.selected_tower_id)) {
+      audio_play_variation(WAV_Snake_Hiss_1, WAV_Snake_Hiss_2, AUDIO_GAIN_UI * 0.42, 0.95, 1.05);
+      global.confirm_action = "";
+      global.confirm_timer_steps = 0;
+    } else if (global.confirm_action == "upgrade") {
+      with (global.selected_tower_id) {
+        event_user(0);
+      }
+      global.confirm_action = "";
+      global.confirm_timer_steps = 0;
+    } else {
+      global.confirm_action = "upgrade";
+      global.confirm_timer_steps = round(CONFIRM_TIMEOUT_SECONDS * room_speed);
+    }
+  }
+
+  if (key_x) {
+    if (!instance_exists(global.selected_tower_id)) {
+      audio_play_variation(WAV_Snake_Hiss_1, WAV_Snake_Hiss_2, AUDIO_GAIN_UI * 0.42, 0.95, 1.05);
+      global.confirm_action = "";
+      global.confirm_timer_steps = 0;
+    } else if (global.confirm_action == "delete") {
+      if (game_delete_selected_tower_refund_life()) {
+        audio_play_variation(WAV_Magical_Sparkle_Disappate_1, WAV_Magical_Sparkle_Disappate_2, AUDIO_GAIN_UI, 0.96, 1.06);
+      } else {
+        audio_play_variation(WAV_Snake_Hiss_1, WAV_Snake_Hiss_2, AUDIO_GAIN_UI * 0.42, 0.95, 1.05);
+      }
+      global.confirm_action = "";
+      global.confirm_timer_steps = 0;
+    } else {
+      global.confirm_action = "delete";
+      global.confirm_timer_steps = round(CONFIRM_TIMEOUT_SECONDS * room_speed);
+    }
+  }
+
+  if (global.confirm_action != "" && !instance_exists(global.selected_tower_id)) {
+    global.confirm_action = "";
+    global.confirm_timer_steps = 0;
+  }
+
+  // Any non-confirm key press clears pending confirmation state.
+  if (
+    global.confirm_action != "" &&
+    keyboard_check_pressed(vk_anykey) &&
+    !key_u &&
+    !key_x
+  ) {
+    global.confirm_action = "";
+    global.confirm_timer_steps = 0;
+  }
 }
 
 if (global.boss_banner_timer_steps > 0) {

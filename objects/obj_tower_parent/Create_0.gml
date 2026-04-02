@@ -1,6 +1,7 @@
 /// @description Initializes shared tower fields and applies level 1 stats.
 
 tower_level = 1;
+tower_kill_count = 0;
 target_id = noone;
 cooldown_steps_remaining = 0;
 

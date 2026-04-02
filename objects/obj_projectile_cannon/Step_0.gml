@@ -22,7 +22,7 @@ audio_play_variation(WAV_Bomb_Explosion_Small_1, WAV_Bomb_Explosion_Small_2, AUD
 with (obj_enemy_parent) {
   if (is_dead || has_leaked) continue;
   if (point_distance(x, y, other.x, other.y) <= other.proj_radius) {
-    enemy_take_damage(id, other.proj_damage);
+    enemy_take_damage(id, other.proj_damage, other.proj_source_tower_id);
   }
 }
 

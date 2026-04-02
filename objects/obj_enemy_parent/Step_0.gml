@@ -34,7 +34,7 @@ if (enemy_burn_timer_steps > 0) {
   enemy_burn_tick_steps_remaining -= 1;
 
   if (enemy_burn_tick_steps_remaining <= 0) {
-    enemy_take_damage(id, enemy_burn_damage_per_tick);
+    enemy_take_damage(id, enemy_burn_damage_per_tick, enemy_last_damage_source);
     enemy_burn_tick_steps_remaining = max(1, round(ENEMY_BURN_TICK_SECONDS * room_speed));
   }
 } else {
@@ -74,6 +74,9 @@ if (!is_dead && enemy_hp <= 0) {
   audio_play_variation(WAV_Small_Spark_1, WAV_Small_Spark_2, AUDIO_GAIN_COMBAT, 0.96, 1.06);
   global.enemies_alive = max(0, global.enemies_alive - 1);
   game_spawn_coin_drop(x, y, enemy_reward);
+  if (instance_exists(enemy_last_damage_source) && variable_instance_exists(enemy_last_damage_source, "tower_kill_count")) {
+    enemy_last_damage_source.tower_kill_count += 1;
+  }
   if (object_index == obj_enemy_boss) {
     global.player_hp += BOSS_KILL_HP_REWARD;
   }

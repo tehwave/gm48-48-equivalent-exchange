@@ -25,7 +25,7 @@ if (point_distance(x, y, proj_target_x, proj_target_y) > proj_speed + 1) exit;
 audio_play_variation(WAV_Fireball_Impact_1, WAV_Fireball_Impact_2, AUDIO_GAIN_COMBAT, 0.96, 1.06);
 
 if (instance_exists(proj_target_id)) {
-  enemy_take_damage(proj_target_id, proj_damage);
+  enemy_take_damage(proj_target_id, proj_damage, proj_source_tower_id);
 }
 
 instance_destroy();
