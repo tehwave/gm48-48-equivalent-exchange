@@ -42,7 +42,6 @@ function scr_draw_panel_blur_backdrop(px, py, pw, ph) {
   /// @type {Real}
   var source_height = clamp(ph * surface_scale_y, 1, app_surface_height - source_y);
 
-  /// A stable multi-tap blur that samples application_surface directly.
   /// @type {Real}
   var blur_pass_count = max(1, round(PANEL_BLUR_PASSES));
   /// @type {Real}
@@ -54,14 +53,112 @@ function scr_draw_panel_blur_backdrop(px, py, pw, ph) {
   /// @type {Real}
   var blur_tint_colour = merge_colour(c_white, make_color_rgb(176, 210, 255), blur_tint_strength);
 
+  /// Try shader path first when shader asset is available.
+  /// @type {Asset.GMShader|Real}
+  var panel_blur_shader = variable_global_exists("panel_blur_shader") ? global.panel_blur_shader : -1;
+  if (panel_blur_shader == -1) {
+    panel_blur_shader = asset_get_index("shd_panel_blur");
+  }
+
+  if (panel_blur_shader != -1) {
+    if (!variable_global_exists("panel_blur_surface_a")) global.panel_blur_surface_a = -1;
+    if (!variable_global_exists("panel_blur_surface_b")) global.panel_blur_surface_b = -1;
+    if (!variable_global_exists("panel_blur_surface_w")) global.panel_blur_surface_w = 0;
+    if (!variable_global_exists("panel_blur_surface_h")) global.panel_blur_surface_h = 0;
+
+    /// @type {Real}
+    var blur_surface_width = max(8, round(source_width / max(1, PANEL_BLUR_DOWNSAMPLE)));
+    /// @type {Real}
+    var blur_surface_height = max(8, round(source_height / max(1, PANEL_BLUR_DOWNSAMPLE)));
+
+    if (
+      !surface_exists(global.panel_blur_surface_a) ||
+      !surface_exists(global.panel_blur_surface_b) ||
+      global.panel_blur_surface_w < blur_surface_width ||
+      global.panel_blur_surface_h < blur_surface_height
+    ) {
+      if (surface_exists(global.panel_blur_surface_a)) surface_free(global.panel_blur_surface_a);
+      if (surface_exists(global.panel_blur_surface_b)) surface_free(global.panel_blur_surface_b);
+
+      global.panel_blur_surface_w = blur_surface_width;
+      global.panel_blur_surface_h = blur_surface_height;
+      global.panel_blur_surface_a = surface_create(global.panel_blur_surface_w, global.panel_blur_surface_h);
+      global.panel_blur_surface_b = surface_create(global.panel_blur_surface_w, global.panel_blur_surface_h);
+    }
+
+    if (surface_exists(global.panel_blur_surface_a) && surface_exists(global.panel_blur_surface_b)) {
+      /// @type {Real}
+      var blur_w = global.panel_blur_surface_w;
+      /// @type {Real}
+      var blur_h = global.panel_blur_surface_h;
+      /// @type {Real}
+      var capture_scale_x = blur_w / source_width;
+      /// @type {Real}
+      var capture_scale_y = blur_h / source_height;
+
+      /// @type {Real}
+      var uniform_blur_step = shader_get_uniform(panel_blur_shader, "u_blur_step");
+
+      gpu_set_texfilter(true);
+
+      surface_set_target(global.panel_blur_surface_a);
+      draw_clear_alpha(c_black, 0);
+      draw_set_alpha(1);
+      draw_set_colour(c_white);
+      draw_surface_part_ext(application_surface, source_x, source_y, source_width, source_height, 0, 0, capture_scale_x, capture_scale_y, c_white, 1);
+      surface_reset_target();
+
+      for (var blur_pass = 0; blur_pass < blur_pass_count; blur_pass += 1) {
+        /// @type {Real}
+        var blur_radius = max(0.5, PANEL_BLUR_SAMPLE_OFFSET + ((blur_pass + 1) * PANEL_BLUR_PASS_STEP));
+
+        surface_set_target(global.panel_blur_surface_b);
+        draw_clear_alpha(c_black, 0);
+        draw_set_alpha(1);
+        draw_set_colour(c_white);
+        shader_set(panel_blur_shader);
+        if (uniform_blur_step != -1) {
+          shader_set_uniform_f(uniform_blur_step, blur_radius / blur_w, 0);
+        }
+        draw_surface_part_ext(global.panel_blur_surface_a, 0, 0, blur_w, blur_h, 0, 0, 1, 1, c_white, 1);
+        shader_reset();
+        surface_reset_target();
+
+        surface_set_target(global.panel_blur_surface_a);
+        draw_clear_alpha(c_black, 0);
+        draw_set_alpha(1);
+        draw_set_colour(c_white);
+        shader_set(panel_blur_shader);
+        if (uniform_blur_step != -1) {
+          shader_set_uniform_f(uniform_blur_step, 0, blur_radius / blur_h);
+        }
+        draw_surface_part_ext(global.panel_blur_surface_b, 0, 0, blur_w, blur_h, 0, 0, 1, 1, c_white, 1);
+        shader_reset();
+        surface_reset_target();
+      }
+
+      draw_set_alpha(blur_alpha_total);
+      draw_set_colour(blur_tint_colour);
+      draw_surface_part_ext(global.panel_blur_surface_a, 0, 0, blur_w, blur_h, px, py, pw / blur_w, ph / blur_h, blur_tint_colour, 1);
+
+      gpu_set_texfilter(false);
+      draw_set_alpha(1);
+      draw_set_colour(c_white);
+
+      global.panel_blur_shader = panel_blur_shader;
+      return;
+    }
+  }
+
+  /// Fallback: stable multi-tap blur that samples application_surface directly.
   gpu_set_texfilter(true);
   draw_set_colour(blur_tint_colour);
 
-  for (var blur_pass = 0; blur_pass < blur_pass_count; blur_pass += 1) {
+  for (var blur_fallback_pass = 0; blur_fallback_pass < blur_pass_count; blur_fallback_pass += 1) {
     /// @type {Real}
-    var blur_radius_x = (PANEL_BLUR_SAMPLE_OFFSET + ((blur_pass + 1) * PANEL_BLUR_PASS_STEP)) * surface_scale_x;
+    var blur_radius_x = (PANEL_BLUR_SAMPLE_OFFSET + ((blur_fallback_pass + 1) * PANEL_BLUR_PASS_STEP)) * surface_scale_x;
     /// @type {Real}
-    var blur_radius_y = (PANEL_BLUR_SAMPLE_OFFSET + ((blur_pass + 1) * PANEL_BLUR_PASS_STEP)) * surface_scale_y;
+    var blur_radius_y = (PANEL_BLUR_SAMPLE_OFFSET + ((blur_fallback_pass + 1) * PANEL_BLUR_PASS_STEP)) * surface_scale_y;
 
     draw_set_alpha(blur_alpha_per_pass * 0.30);
     draw_surface_part_ext(application_surface, source_x, source_y, source_width, source_height, px, py, pw / source_width, ph / source_height, blur_tint_colour, 1);
@@ -691,7 +788,15 @@ function game_register_leak(leak_damage, source_x, source_y) {
     if (!variable_global_exists("leak_edge_flash_steps_remaining")) {
       global.leak_edge_flash_steps_remaining = 0;
     }
+    if (!variable_global_exists("leak_edge_flash_intensity")) {
+      global.leak_edge_flash_intensity = 0;
+    }
     global.leak_edge_flash_steps_remaining = max(global.leak_edge_flash_steps_remaining, leak_flash_steps);
+    global.leak_edge_flash_intensity = clamp(
+      max(global.leak_edge_flash_intensity, 0.45) + (hp_lost * LEAK_EDGE_FLASH_STACK_PER_HP),
+      0,
+      1
+    );
 
     /// @type {String}
     var hp_loss_text = "-" + game_value_fx_format_amount(hp_lost);

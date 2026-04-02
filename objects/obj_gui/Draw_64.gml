@@ -1252,17 +1252,43 @@ if (variable_global_exists("leak_edge_flash_steps_remaining") && global.leak_edg
   /// @type {Real}
   var leak_flash_t = clamp(global.leak_edge_flash_steps_remaining / leak_flash_total_steps, 0, 1);
   /// @type {Real}
-  var leak_flash_alpha = LEAK_EDGE_FLASH_MAX_ALPHA * leak_flash_t;
+  var leak_flash_decay = power(leak_flash_t, 0.62);
   /// @type {Real}
-  var leak_flash_edge = clamp(LEAK_EDGE_FLASH_EDGE_PX, 4, floor(min(gui_width, gui_height) * 0.25));
+  var leak_flash_pulse = 0.82 + (0.18 * sin((1 - leak_flash_t) * pi * 5.4));
+  /// @type {Real}
+  var leak_flash_intensity = variable_global_exists("leak_edge_flash_intensity") ? global.leak_edge_flash_intensity : 1;
+  /// @type {Real}
+  var leak_flash_strength = clamp(leak_flash_intensity * leak_flash_decay * leak_flash_pulse, 0, 1);
+  /// @type {Real}
+  var leak_flash_outer_alpha = LEAK_EDGE_FLASH_MAX_ALPHA * leak_flash_strength;
+  /// @type {Real}
+  var leak_flash_inner_alpha = leak_flash_outer_alpha * 0.65;
+  /// @type {Real}
+  var leak_flash_outer_edge = clamp(LEAK_EDGE_FLASH_EDGE_PX, 12, floor(min(gui_width, gui_height) * 0.42));
+  /// @type {Real}
+  var leak_flash_inner_edge = max(6, floor(leak_flash_outer_edge * 0.58));
+  /// @type {Real}
+  var leak_flash_wash_alpha = leak_flash_outer_alpha * 0.18;
 
   gpu_set_blendmode(bm_add);
-  draw_set_alpha(leak_flash_alpha);
-  draw_set_colour(make_color_rgb(255, 48, 64));
-  draw_rectangle(0, 0, gui_width, leak_flash_edge, false);
-  draw_rectangle(0, gui_height - leak_flash_edge, gui_width, gui_height, false);
-  draw_rectangle(0, 0, leak_flash_edge, gui_height, false);
-  draw_rectangle(gui_width - leak_flash_edge, 0, gui_width, gui_height, false);
+  draw_set_alpha(leak_flash_wash_alpha);
+  draw_set_colour(make_color_rgb(120, 0, 0));
+  draw_rectangle(0, 0, gui_width, gui_height, false);
+
+  draw_set_alpha(leak_flash_outer_alpha);
+  draw_set_colour(make_color_rgb(170, 0, 0));
+  draw_rectangle(0, 0, gui_width, leak_flash_outer_edge, false);
+  draw_rectangle(0, gui_height - leak_flash_outer_edge, gui_width, gui_height, false);
+  draw_rectangle(0, 0, leak_flash_outer_edge, gui_height, false);
+  draw_rectangle(gui_width - leak_flash_outer_edge, 0, gui_width, gui_height, false);
+
+  draw_set_alpha(leak_flash_inner_alpha);
+  draw_set_colour(make_color_rgb(255, 26, 26));
+  draw_rectangle(0, 0, gui_width, leak_flash_inner_edge, false);
+  draw_rectangle(0, gui_height - leak_flash_inner_edge, gui_width, gui_height, false);
+  draw_rectangle(0, 0, leak_flash_inner_edge, gui_height, false);
+  draw_rectangle(gui_width - leak_flash_inner_edge, 0, gui_width, gui_height, false);
+
   gpu_set_blendmode(bm_normal);
   draw_set_alpha(1);
   draw_set_colour(c_white);

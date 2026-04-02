@@ -16,6 +16,12 @@ if (global.leak_edge_flash_steps_remaining > 0) {
   global.leak_edge_flash_steps_remaining -= 1;
 }
 
+if (global.leak_edge_flash_intensity > 0) {
+  /// @type {Real}
+  var leak_flash_fade_per_step = 1 / max(1, round(LEAK_EDGE_FLASH_SECONDS * room_speed));
+  global.leak_edge_flash_intensity = max(0, global.leak_edge_flash_intensity - leak_flash_fade_per_step);
+}
+
 if (global.confirm_timer_steps > 0) {
   global.confirm_timer_steps -= 1;
   if (global.confirm_timer_steps <= 0) {

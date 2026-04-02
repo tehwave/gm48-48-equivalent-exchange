@@ -1,0 +1,12 @@
+{
+  "$GMShader":"",
+  "%Name":"shd_panel_blur",
+  "name":"shd_panel_blur",
+  "parent":{
+    "name":"gm48-48-equivalent-exchange",
+    "path":"gm48-48-equivalent-exchange.yyp",
+  },
+  "resourceType":"GMShader",
+  "resourceVersion":"2.0",
+  "type":1,
+}

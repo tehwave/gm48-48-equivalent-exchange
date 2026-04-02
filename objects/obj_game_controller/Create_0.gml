@@ -25,6 +25,7 @@ global.ambient_sound_instance = -1;
 global.enemy_call_sfx_cooldown_steps_total = max(1, round(room_speed * AUDIO_ENEMY_CALL_COOLDOWN_SECONDS));
 global.enemy_call_sfx_cooldown_steps_remaining = 0;
 global.leak_edge_flash_steps_remaining = 0;
+global.leak_edge_flash_intensity = 0;
 global.birdsong_steps_remaining = irandom_range(
 	max(1, round(room_speed * AUDIO_BIRDSONG_MIN_SECONDS)),
 	max(1, round(room_speed * AUDIO_BIRDSONG_MAX_SECONDS))
@@ -38,6 +39,12 @@ global.decal_surface_w = 0;
 global.decal_surface_h = 0;
 global.decal_static_marks = [];
 global.decal_dynamic_marks = [];
+
+global.panel_blur_surface_a = -1;
+global.panel_blur_surface_b = -1;
+global.panel_blur_surface_w = 0;
+global.panel_blur_surface_h = 0;
+global.panel_blur_shader = asset_get_index("shd_panel_blur");
 
 game_decals_init();
 
