@@ -350,6 +350,101 @@ if (global.build_mode && instance_exists(global.build_base_id)) {
   /// @type {Real}
   var build_panel_y = clamp(base_gui_y - 132, 10, gui_height - build_panel_height - 10);
 
+  /// @type {Real}
+  var build_link_start_x = base_gui_x;
+  /// @type {Real}
+  var build_link_start_y = base_gui_y;
+  /// @type {Real}
+  var build_link_target_x = (build_link_start_x <= (build_panel_x + (build_panel_width * 0.5))) ? build_panel_x : (build_panel_x + build_panel_width);
+  /// @type {Real}
+  var build_link_target_y = clamp(build_link_start_y, build_panel_y + 24, build_panel_y + build_panel_height - 24);
+  /// Soft gradient wedge from selected base into panel edge.
+  /// @type {Real}
+  var build_link_edge_x = build_link_target_x;
+  /// @type {Real}
+  var build_link_top_y = build_panel_y + 14;
+  /// @type {Real}
+  var build_link_bottom_y = build_panel_y + build_panel_height - 14;
+  /// @type {Real}
+  var build_link_fade_stop_x = lerp(build_link_edge_x, build_link_start_x, 0.55);
+  /// @type {Real}
+  var build_link_fade_stop_y = lerp(build_link_target_y, build_link_start_y, 0.55);
+  /// @type {Real}
+  var build_link_tip_alpha = 0;
+  /// @type {Real}
+  var build_link_core_alpha = 0.3;
+  /// @type {Real}
+  var build_link_outer_alpha = 0.06;
+  /// @type {Real}
+  var build_link_falloff_steps = 8;
+
+  for (var build_step = 0; build_step < build_link_falloff_steps; build_step += 1) {
+    /// @type {Real}
+    var build_t0 = build_step / build_link_falloff_steps;
+    /// @type {Real}
+    var build_t1 = (build_step + 1) / build_link_falloff_steps;
+    /// @type {Real}
+    var build_outer_alpha_0 = build_link_outer_alpha * power(1 - build_t0, 2.3);
+    /// @type {Real}
+    var build_outer_alpha_1 = build_link_outer_alpha * power(1 - build_t1, 2.3);
+    /// @type {Real}
+    var build_core_alpha_0 = build_link_core_alpha * power(1 - build_t0, 2.05);
+    /// @type {Real}
+    var build_core_alpha_1 = build_link_core_alpha * power(1 - build_t1, 2.05);
+
+    /// @type {Real}
+    var build_outer_top_x0 = lerp(build_link_edge_x, build_link_fade_stop_x, build_t0);
+    /// @type {Real}
+    var build_outer_top_y0 = lerp(build_link_top_y - 8, build_link_fade_stop_y, build_t0);
+    /// @type {Real}
+    var build_outer_top_x1 = lerp(build_link_edge_x, build_link_fade_stop_x, build_t1);
+    /// @type {Real}
+    var build_outer_top_y1 = lerp(build_link_top_y - 8, build_link_fade_stop_y, build_t1);
+    /// @type {Real}
+    var build_outer_bottom_x0 = lerp(build_link_edge_x, build_link_fade_stop_x, build_t0);
+    /// @type {Real}
+    var build_outer_bottom_y0 = lerp(build_link_bottom_y + 8, build_link_fade_stop_y, build_t0);
+    /// @type {Real}
+    var build_outer_bottom_x1 = lerp(build_link_edge_x, build_link_fade_stop_x, build_t1);
+    /// @type {Real}
+    var build_outer_bottom_y1 = lerp(build_link_bottom_y + 8, build_link_fade_stop_y, build_t1);
+
+    draw_primitive_begin(pr_trianglelist);
+    draw_vertex_color(build_outer_top_x0, build_outer_top_y0, c_black, build_outer_alpha_0);
+    draw_vertex_color(build_outer_bottom_x0, build_outer_bottom_y0, c_black, build_outer_alpha_0);
+    draw_vertex_color(build_outer_top_x1, build_outer_top_y1, c_black, build_outer_alpha_1);
+    draw_vertex_color(build_outer_bottom_x0, build_outer_bottom_y0, c_black, build_outer_alpha_0);
+    draw_vertex_color(build_outer_bottom_x1, build_outer_bottom_y1, c_black, build_outer_alpha_1);
+    draw_vertex_color(build_outer_top_x1, build_outer_top_y1, c_black, build_outer_alpha_1);
+    draw_primitive_end();
+
+    /// @type {Real}
+    var build_core_top_x0 = lerp(build_link_edge_x, build_link_fade_stop_x, build_t0);
+    /// @type {Real}
+    var build_core_top_y0 = lerp(build_link_top_y, build_link_fade_stop_y, build_t0);
+    /// @type {Real}
+    var build_core_top_x1 = lerp(build_link_edge_x, build_link_fade_stop_x, build_t1);
+    /// @type {Real}
+    var build_core_top_y1 = lerp(build_link_top_y, build_link_fade_stop_y, build_t1);
+    /// @type {Real}
+    var build_core_bottom_x0 = lerp(build_link_edge_x, build_link_fade_stop_x, build_t0);
+    /// @type {Real}
+    var build_core_bottom_y0 = lerp(build_link_bottom_y, build_link_fade_stop_y, build_t0);
+    /// @type {Real}
+    var build_core_bottom_x1 = lerp(build_link_edge_x, build_link_fade_stop_x, build_t1);
+    /// @type {Real}
+    var build_core_bottom_y1 = lerp(build_link_bottom_y, build_link_fade_stop_y, build_t1);
+
+    draw_primitive_begin(pr_trianglelist);
+    draw_vertex_color(build_core_top_x0, build_core_top_y0, c_black, build_core_alpha_0);
+    draw_vertex_color(build_core_bottom_x0, build_core_bottom_y0, c_black, build_core_alpha_0);
+    draw_vertex_color(build_core_top_x1, build_core_top_y1, c_black, build_core_alpha_1);
+    draw_vertex_color(build_core_bottom_x0, build_core_bottom_y0, c_black, build_core_alpha_0);
+    draw_vertex_color(build_core_bottom_x1, build_core_bottom_y1, c_black, build_core_alpha_1);
+    draw_vertex_color(build_core_top_x1, build_core_top_y1, c_black, build_core_alpha_1);
+    draw_primitive_end();
+  }
+
   scr_draw_rounded_panel(build_panel_x, build_panel_y, build_panel_width, build_panel_height, 0.86, 14);
 
   draw_set_halign(fa_left);
@@ -361,8 +456,6 @@ if (global.build_mode && instance_exists(global.build_base_id)) {
   draw_text_transformed(build_panel_x + 16, build_panel_y - 22, "BUILD TOWER", 2.4, 2.4, 0);
 
   draw_set_font(fnt_body);
-  draw_set_colour(c_black);
-  draw_text_shadow(build_panel_x + 13, build_panel_y + 35, "Select: [Q]/[E] or [1]-[5]");
   draw_set_colour(c_ltgray);
   draw_text_shadow(build_panel_x + 12, build_panel_y + 34, "Select: [Q]/[E] or [1]-[5]");
 
@@ -424,22 +517,12 @@ if (global.build_mode && instance_exists(global.build_base_id)) {
     draw_set_halign(fa_left);
     draw_set_valign(fa_top);
 
-    draw_set_colour(c_black);
-    draw_text_shadow(
-      build_panel_x + 15,
-      row_y + 1,
-      row_prefix + "[" + string(tower_index + 1) + "] " + tower_description.name + " | " + tower_description.damage_type + " | R " + string(tower_description.range) + " | " + string(tower_description.hp_cost) + " Life"
-    );
-
     draw_set_colour(tower_selected ? c_yellow : c_silver);
     draw_text_shadow(
       build_panel_x + 14,
       row_y,
       row_prefix + "[" + string(tower_index + 1) + "] " + tower_description.name + " | " + tower_description.damage_type + " | R " + string(tower_description.range) + " | " + string(tower_description.hp_cost) + " Life"
     );
-
-    draw_set_colour(c_black);
-    draw_text_shadow(build_panel_x + 25, row_y + build_row_detail_offset + 1, tower_description.special);
 
     draw_set_colour(tower_selected ? c_white : c_ltgray);
     draw_text_shadow(build_panel_x + 24, row_y + build_row_detail_offset, tower_description.special);
@@ -455,9 +538,6 @@ if (global.build_mode && instance_exists(global.build_base_id)) {
   );
   draw_set_alpha(1);
 
-  draw_set_colour(c_black);
-  draw_text_shadow(build_panel_x + 13, build_panel_y + build_panel_height - 84, "Build selected base: [B] or [Enter]");
-  draw_text_shadow(build_panel_x + 13, build_panel_y + build_panel_height - 52, "Click base to change | [RMB]/[Esc] cancel");
   draw_set_colour(c_white);
   draw_text_shadow(build_panel_x + 12, build_panel_y + build_panel_height - 85, "Build selected base: [B] or [Enter]");
   draw_text_shadow(build_panel_x + 12, build_panel_y + build_panel_height - 53, "Click base to change | [RMB]/[Esc] cancel");
@@ -484,16 +564,112 @@ if (!global.build_mode && instance_exists(global.selected_tower_id)) {
   /// @type {Real}
   var panel_row_gap = 22;
   /// @type {Real}
-  var selected_panel_right_x = tower_gui_x + 26;
+  var selected_panel_right_x = tower_gui_x + 110;
   /// @type {Real}
-  var selected_panel_left_x = tower_gui_x - selected_panel_width - 26;
+  var selected_panel_left_x = tower_gui_x - selected_panel_width - 110;
   /// @type {Real}
   var selected_panel_x = clamp(selected_panel_right_x, 10, gui_width - selected_panel_width - 10);
   if (selected_panel_right_x + selected_panel_width > gui_width - 10 && selected_panel_left_x >= 10) {
     selected_panel_x = selected_panel_left_x;
   }
   /// @type {Real}
-  var selected_panel_y = clamp(tower_gui_y - 44, 10, gui_height - selected_panel_height - 10);
+  var selected_panel_y = clamp(tower_gui_y - 132, 10, gui_height - selected_panel_height - 10);
+
+  /// @type {Real}
+  var selected_link_start_x = tower_gui_x;
+  /// @type {Real}
+  var selected_link_start_y = tower_gui_y;
+  /// @type {Real}
+  var selected_link_target_x = (selected_link_start_x <= (selected_panel_x + (selected_panel_width * 0.5))) ? selected_panel_x : (selected_panel_x + selected_panel_width);
+  /// @type {Real}
+  var selected_link_target_y = clamp(selected_link_start_y, selected_panel_y + 18, selected_panel_y + selected_panel_height - 18);
+
+  /// Soft gradient wedge from selected tower into panel edge.
+  /// @type {Real}
+  var selected_link_edge_x = selected_link_target_x;
+  /// @type {Real}
+  var selected_link_top_y = selected_panel_y + 14;
+  /// @type {Real}
+  var selected_link_bottom_y = selected_panel_y + selected_panel_height - 14;
+  /// @type {Real}
+  var selected_link_fade_stop_x = lerp(selected_link_edge_x, selected_link_start_x, 0.55);
+  /// @type {Real}
+  var selected_link_fade_stop_y = lerp(selected_link_target_y, selected_link_start_y, 0.55);
+  /// @type {Real}
+  var selected_link_tip_alpha = 0;
+  /// @type {Real}
+  var selected_link_core_alpha = 0.3;
+  /// @type {Real}
+  var selected_link_outer_alpha = 0.06;
+  /// @type {Real}
+  var selected_link_falloff_steps = 8;
+
+  for (var selected_step = 0; selected_step < selected_link_falloff_steps; selected_step += 1) {
+    /// @type {Real}
+    var selected_t0 = selected_step / selected_link_falloff_steps;
+    /// @type {Real}
+    var selected_t1 = (selected_step + 1) / selected_link_falloff_steps;
+    /// @type {Real}
+    var selected_outer_alpha_0 = selected_link_outer_alpha * power(1 - selected_t0, 2.3);
+    /// @type {Real}
+    var selected_outer_alpha_1 = selected_link_outer_alpha * power(1 - selected_t1, 2.3);
+    /// @type {Real}
+    var selected_core_alpha_0 = selected_link_core_alpha * power(1 - selected_t0, 2.05);
+    /// @type {Real}
+    var selected_core_alpha_1 = selected_link_core_alpha * power(1 - selected_t1, 2.05);
+
+    /// @type {Real}
+    var selected_outer_top_x0 = lerp(selected_link_edge_x, selected_link_fade_stop_x, selected_t0);
+    /// @type {Real}
+    var selected_outer_top_y0 = lerp(selected_link_top_y - 8, selected_link_fade_stop_y, selected_t0);
+    /// @type {Real}
+    var selected_outer_top_x1 = lerp(selected_link_edge_x, selected_link_fade_stop_x, selected_t1);
+    /// @type {Real}
+    var selected_outer_top_y1 = lerp(selected_link_top_y - 8, selected_link_fade_stop_y, selected_t1);
+    /// @type {Real}
+    var selected_outer_bottom_x0 = lerp(selected_link_edge_x, selected_link_fade_stop_x, selected_t0);
+    /// @type {Real}
+    var selected_outer_bottom_y0 = lerp(selected_link_bottom_y + 8, selected_link_fade_stop_y, selected_t0);
+    /// @type {Real}
+    var selected_outer_bottom_x1 = lerp(selected_link_edge_x, selected_link_fade_stop_x, selected_t1);
+    /// @type {Real}
+    var selected_outer_bottom_y1 = lerp(selected_link_bottom_y + 8, selected_link_fade_stop_y, selected_t1);
+
+    draw_primitive_begin(pr_trianglelist);
+    draw_vertex_color(selected_outer_top_x0, selected_outer_top_y0, c_black, selected_outer_alpha_0);
+    draw_vertex_color(selected_outer_bottom_x0, selected_outer_bottom_y0, c_black, selected_outer_alpha_0);
+    draw_vertex_color(selected_outer_top_x1, selected_outer_top_y1, c_black, selected_outer_alpha_1);
+    draw_vertex_color(selected_outer_bottom_x0, selected_outer_bottom_y0, c_black, selected_outer_alpha_0);
+    draw_vertex_color(selected_outer_bottom_x1, selected_outer_bottom_y1, c_black, selected_outer_alpha_1);
+    draw_vertex_color(selected_outer_top_x1, selected_outer_top_y1, c_black, selected_outer_alpha_1);
+    draw_primitive_end();
+
+    /// @type {Real}
+    var selected_core_top_x0 = lerp(selected_link_edge_x, selected_link_fade_stop_x, selected_t0);
+    /// @type {Real}
+    var selected_core_top_y0 = lerp(selected_link_top_y, selected_link_fade_stop_y, selected_t0);
+    /// @type {Real}
+    var selected_core_top_x1 = lerp(selected_link_edge_x, selected_link_fade_stop_x, selected_t1);
+    /// @type {Real}
+    var selected_core_top_y1 = lerp(selected_link_top_y, selected_link_fade_stop_y, selected_t1);
+    /// @type {Real}
+    var selected_core_bottom_x0 = lerp(selected_link_edge_x, selected_link_fade_stop_x, selected_t0);
+    /// @type {Real}
+    var selected_core_bottom_y0 = lerp(selected_link_bottom_y, selected_link_fade_stop_y, selected_t0);
+    /// @type {Real}
+    var selected_core_bottom_x1 = lerp(selected_link_edge_x, selected_link_fade_stop_x, selected_t1);
+    /// @type {Real}
+    var selected_core_bottom_y1 = lerp(selected_link_bottom_y, selected_link_fade_stop_y, selected_t1);
+
+    draw_primitive_begin(pr_trianglelist);
+    draw_vertex_color(selected_core_top_x0, selected_core_top_y0, c_black, selected_core_alpha_0);
+    draw_vertex_color(selected_core_bottom_x0, selected_core_bottom_y0, c_black, selected_core_alpha_0);
+    draw_vertex_color(selected_core_top_x1, selected_core_top_y1, c_black, selected_core_alpha_1);
+    draw_vertex_color(selected_core_bottom_x0, selected_core_bottom_y0, c_black, selected_core_alpha_0);
+    draw_vertex_color(selected_core_bottom_x1, selected_core_bottom_y1, c_black, selected_core_alpha_1);
+    draw_vertex_color(selected_core_top_x1, selected_core_top_y1, c_black, selected_core_alpha_1);
+    draw_primitive_end();
+  }
 
   scr_draw_rounded_panel(selected_panel_x, selected_panel_y, selected_panel_width, selected_panel_height, 0.74, 14);
 
@@ -646,7 +822,7 @@ if (global.game_state == GAME_STATE_INTRO) {
   if (intro_upgrade_sprite == -1) intro_upgrade_sprite = spr_tower_base;
 
   if (global.intro_lock_timer_steps > 0) {
-    continue_prompt = "Press [Space] in " + string(intro_seconds_remaining) + "s";
+    continue_prompt = "Wait " + string(intro_seconds_remaining) + "s, then press [Space]";
   }
 
   draw_set_alpha(0.62);
