@@ -190,6 +190,20 @@ When the build is unstable, validate in this order:
 
 Use `show_debug_message()` for quick wave and HP logging during jam iteration.
 
+## MCP Workflow (Context First)
+
+When non-trivial gameplay/system tasks come up (multi-file changes, behavior refactors, debugging unknown interactions), prefer gathering whole-project context first using:
+
+- `mcp_gms2-mcp_export_project_data`
+
+Then use targeted MCP tools for detail-level inspection:
+
+- `mcp_gms2-mcp_get_object_info` for object/event/inheritance details
+- `mcp_gms2-mcp_get_gml_file_content` for exact script or event code
+- `mcp_gms2-mcp_list_project_assets` for asset discovery and naming validation
+
+This order reduces hallucinated assumptions about object relationships and speeds up safe jam-time edits.
+
 ## Out-of-Scope for Jam
 
 Unless explicitly requested, avoid implementing:
