@@ -25,46 +25,27 @@ draw_set_colour(c_white);
 
 if (coin_collected) {
   /// @type {Real}
+  var draw_collect_x = coin_collect_draw_x;
+  /// @type {Real}
+  var draw_collect_y = coin_collect_draw_y;
+
+  /// @type {Real}
   var collect_t = 1 - (coin_collect_vfx_steps / max(1, coin_collect_vfx_total_steps));
   /// @type {Real}
   var burst_alpha = 1 - collect_t;
   /// @type {Real}
-  var ring_radius = 10 + (22 * collect_t);
-  /// @type {Real}
-  var collect_scale = 1 + (0.4 * collect_t);
+  var collect_scale = 1 + (0.28 * (1 - collect_t));
 
   draw_sprite_ext(
     sprite_index,
     image_index,
-    x,
-    y,
+    draw_collect_x,
+    draw_collect_y,
     collect_scale,
     collect_scale,
     image_angle,
     c_yellow,
     burst_alpha
-  );
-
-  draw_set_alpha(burst_alpha);
-  draw_set_colour(c_yellow);
-  draw_circle(x, y, ring_radius, true);
-  draw_set_alpha(burst_alpha * 0.8);
-  draw_set_colour(c_white);
-  draw_circle(x, y, ring_radius * 0.55, true);
-
-  draw_set_alpha(burst_alpha);
-  draw_set_halign(fa_center);
-  draw_set_valign(fa_middle);
-  draw_set_colour(c_lime);
-  /// @type {Real}
-  var text_scale = 1.8 + (0.35 * collect_t);
-  draw_text_transformed(
-    x,
-    y - 28,
-    "+" + string(coin_value),
-    text_scale,
-    text_scale,
-    0
   );
 
   draw_set_alpha(1);

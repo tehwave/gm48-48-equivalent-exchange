@@ -203,14 +203,36 @@ if (global.build_mode) {
       global.confirm_action = "";
       global.confirm_timer_steps = 0;
     } else if (global.confirm_action == "upgrade") {
-      with (global.selected_tower_id) {
-        event_user(0);
+      /// @type {Real}
+      var confirm_target_level = global.selected_tower_id.tower_level + 1;
+      /// @type {Real}
+      var confirm_upgrade_cost = scr_tower_upgrade_cost(global.selected_tower_id.object_index, confirm_target_level);
+
+      if (confirm_upgrade_cost <= 0 || global.player_coins < confirm_upgrade_cost) {
+        audio_play_variation(WAV_Snake_Hiss_1, WAV_Snake_Hiss_2, AUDIO_GAIN_UI * 0.42, 0.95, 1.05);
+        global.confirm_action = "";
+        global.confirm_timer_steps = 0;
+      } else {
+        with (global.selected_tower_id) {
+          event_user(0);
+        }
+        global.confirm_action = "";
+        global.confirm_timer_steps = 0;
       }
-      global.confirm_action = "";
-      global.confirm_timer_steps = 0;
     } else {
-      global.confirm_action = "upgrade";
-      global.confirm_timer_steps = round(CONFIRM_TIMEOUT_SECONDS * room_speed);
+      /// @type {Real}
+      var target_level = global.selected_tower_id.tower_level + 1;
+      /// @type {Real}
+      var upgrade_cost = scr_tower_upgrade_cost(global.selected_tower_id.object_index, target_level);
+
+      if (upgrade_cost <= 0 || global.player_coins < upgrade_cost) {
+        audio_play_variation(WAV_Snake_Hiss_1, WAV_Snake_Hiss_2, AUDIO_GAIN_UI * 0.42, 0.95, 1.05);
+        global.confirm_action = "";
+        global.confirm_timer_steps = 0;
+      } else {
+        global.confirm_action = "upgrade";
+        global.confirm_timer_steps = round(CONFIRM_TIMEOUT_SECONDS * room_speed);
+      }
     }
   }
 

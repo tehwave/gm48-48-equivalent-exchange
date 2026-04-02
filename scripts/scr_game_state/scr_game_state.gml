@@ -20,6 +20,48 @@ function scr_draw_rounded_panel(px, py, pw, ph, bg_alpha, corner_radius) {
   draw_set_colour(c_white);
 }
 
+/// @description Draws text with an automatic shadow pass using the current draw colour for the main text.
+/// @param {Real} x
+/// @param {Real} y
+/// @param {String} text
+/// @param {Real} shadow_offset_x
+/// @param {Real} shadow_offset_y
+/// @returns {Void}
+function draw_text_shadow(x, y, text, shadow_offset_x, shadow_offset_y) {
+  if (argument_count < 4) shadow_offset_x = 1;
+  if (argument_count < 5) shadow_offset_y = 1;
+
+  /// @type {Real}
+  var main_colour = draw_get_colour();
+
+  draw_set_colour(c_black);
+  draw_text(x + shadow_offset_x, y + shadow_offset_y, text);
+  draw_set_colour(main_colour);
+  draw_text(x, y, text);
+}
+
+/// @description Draws wrapped text with an automatic shadow pass using the current draw colour for the main text.
+/// @param {Real} x
+/// @param {Real} y
+/// @param {String} text
+/// @param {Real} sep
+/// @param {Real} width
+/// @param {Real} shadow_offset_x
+/// @param {Real} shadow_offset_y
+/// @returns {Void}
+function draw_text_shadow_ext(x, y, text, sep, width, shadow_offset_x, shadow_offset_y) {
+  if (argument_count < 6) shadow_offset_x = 1;
+  if (argument_count < 7) shadow_offset_y = 1;
+
+  /// @type {Real}
+  var main_colour = draw_get_colour();
+
+  draw_set_colour(c_black);
+  draw_text_ext(x + shadow_offset_x, y + shadow_offset_y, text, sep, width);
+  draw_set_colour(main_colour);
+  draw_text_ext(x, y, text, sep, width);
+}
+
 /// @param {Real} tower_type_index
 /// @returns {Struct}
 function scr_get_tower_description(tower_type_index) {
@@ -96,7 +138,17 @@ function game_try_spend_coins(amount) {
   if (!game_is_running()) return false;
   if (amount <= 0) return true;
   if (global.player_coins < amount) return false;
+
   global.player_coins -= amount;
+
+  if (!variable_global_exists("coin_spend_vfx_pending")) {
+    global.coin_spend_vfx_pending = 0;
+  }
+
+  /// @type {Real}
+  var spend_vfx_budget = clamp(round(amount), 1, 36);
+  global.coin_spend_vfx_pending += spend_vfx_budget;
+
   return true;
 }
 

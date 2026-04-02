@@ -2,7 +2,50 @@
 
 if (coin_collected) {
   coin_collect_vfx_steps -= 1;
-  y -= 1.2;
+  coin_collect_elapsed_steps += 1;
+
+  /// @type {Real}
+  var collect_t = clamp(coin_collect_elapsed_steps / max(1, coin_collect_vfx_total_steps), 0, 1);
+  /// @type {Real}
+  var ease_out_t = 1 - power(1 - collect_t, coin_collect_path_ease_power);
+
+  /// @type {Real}
+  var gui_x = lerp(coin_collect_start_gui_x, coin_collect_target_gui_x, ease_out_t);
+  gui_x += sin(collect_t * pi) * coin_collect_path_lateral;
+  gui_x += sin((collect_t * pi) * coin_collect_path_wobble_freq) * coin_collect_path_wobble;
+  /// @type {Real}
+  var gui_y = lerp(coin_collect_start_gui_y, coin_collect_target_gui_y, ease_out_t);
+  gui_y -= sin(collect_t * pi) * coin_collect_arc_height * coin_collect_path_arc_mult;
+
+  /// @type {Real}
+  var camera_id_collect = view_camera[0];
+  /// @type {Real}
+  var view_x_collect = (camera_id_collect != -1) ? camera_get_view_x(camera_id_collect) : 0;
+  /// @type {Real}
+  var view_y_collect = (camera_id_collect != -1) ? camera_get_view_y(camera_id_collect) : 0;
+  /// @type {Real}
+  var view_w_collect = (camera_id_collect != -1) ? camera_get_view_width(camera_id_collect) : room_width;
+  /// @type {Real}
+  var view_h_collect = (camera_id_collect != -1) ? camera_get_view_height(camera_id_collect) : room_height;
+  /// @type {Real}
+  var gui_w_collect = display_get_gui_width();
+  /// @type {Real}
+  var gui_h_collect = display_get_gui_height();
+
+  /// @type {Real}
+  var safe_view_w_collect = max(1, view_w_collect);
+  /// @type {Real}
+  var safe_view_h_collect = max(1, view_h_collect);
+  /// @type {Real}
+  var safe_gui_w_collect = max(1, gui_w_collect);
+  /// @type {Real}
+  var safe_gui_h_collect = max(1, gui_h_collect);
+
+  coin_collect_draw_x = view_x_collect + ((gui_x / safe_gui_w_collect) * safe_view_w_collect);
+  coin_collect_draw_y = view_y_collect + ((gui_y / safe_gui_h_collect) * safe_view_h_collect);
+
+  x = coin_collect_draw_x;
+  y = coin_collect_draw_y;
   image_angle += 14;
 
   if (coin_collect_vfx_steps <= 0) {

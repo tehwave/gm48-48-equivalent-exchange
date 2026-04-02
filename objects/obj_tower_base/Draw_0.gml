@@ -23,37 +23,12 @@ if (hovered && can_place) {
 }
 
 if (is_selected_base) {
-  draw_alpha = 0.88;
-}
-
-if (sprite_index != -1) {
-  draw_sprite_ext(sprite_index, image_index, x, y, image_xscale, image_yscale, image_angle, image_blend, draw_alpha);
+  draw_alpha = 1;
 }
 
 if (is_selected_base) {
   /// @type {Real}
   var tower_phase_seed = (x * 0.013) + (y * 0.017);
-  /// @type {Real}
-  var select_time = (current_time * 0.018) + (tower_phase_seed * 0.17);
-  /// @type {Real}
-  var select_wave = (sin(select_time) + 1) * 0.5;
-  /// @type {Real}
-  var select_radius = 20 + (select_wave * 4);
-  /// @type {Real}
-  var select_alpha = 0.56 + (select_wave * 0.34);
-
-  // Match selected tower marker style for uniform readability.
-  draw_set_colour(c_yellow);
-  draw_set_alpha(select_alpha * 0.42);
-  draw_circle(x, y + 12, select_radius, true);
-
-  gpu_set_blendmode(bm_add);
-  draw_set_alpha(select_alpha * 0.72);
-  draw_circle(x, y + 12, select_radius + 1, false);
-
-  draw_set_colour(c_white);
-  draw_set_alpha(select_alpha * 0.75);
-  draw_circle(x, y + 12, select_radius - 2, false);
 
   /// @type {Real}
   var tower_range = max(0, selected_tower_description.range);
@@ -69,8 +44,9 @@ if (is_selected_base) {
     /// @type {Real}
     var ring_radius = tower_range + (pulse_wave * 2);
 
+    // Draw range ring first so it stays under the base sprite.
     draw_set_colour(c_ltgray);
-    draw_set_alpha(aura_alpha * 0.5);
+    draw_set_alpha(aura_alpha * 0.4);
     draw_circle(x, y, ring_radius, true);
 
     draw_set_alpha(aura_alpha);
@@ -80,8 +56,11 @@ if (is_selected_base) {
     draw_set_colour(c_white);
     draw_circle(x, y, ring_radius - 1, false);
   }
-
-  gpu_set_blendmode(bm_normal);
-  draw_set_colour(c_white);
-  draw_set_alpha(1);
 }
+
+if (sprite_index != -1) {
+  draw_sprite_ext(sprite_index, image_index, x, y, image_xscale, image_yscale, image_angle, image_blend, draw_alpha);
+}
+
+draw_set_colour(c_white);
+draw_set_alpha(1);

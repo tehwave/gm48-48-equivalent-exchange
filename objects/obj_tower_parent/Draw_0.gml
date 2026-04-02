@@ -43,12 +43,16 @@ if (tower_fire_recoil_steps_remaining > 0) {
 var is_selected = (global.selected_tower_id == id);
 /// @type {Real}
 var tower_phase_seed = (x * 0.013) + (y * 0.017);
+/// @type {Real}
+var select_wave = 0;
 
 if (is_selected) {
   /// @type {Real}
-  var select_time = (current_time * 0.018) + (tower_phase_seed * 0.17);
-  /// @type {Real}
-  var select_wave = (sin(select_time) + 1) * 0.5;
+  var shared_select_time = (current_time * 0.012) + (tower_phase_seed * 0.11);
+  select_wave = (sin(shared_select_time) + 1) * 0.5;
+}
+
+if (is_selected) {
   /// @type {Real}
   var select_radius = 20 + (select_wave * 4);
   /// @type {Real}
@@ -83,15 +87,11 @@ if (is_selected) {
 
 if (is_selected && tower_range > 0) {
   /// @type {Real}
-  var pulse_time = (current_time * 0.006) + (tower_phase_seed * 0.07);
+  var aura_alpha = 0.12 + (select_wave * 0.08);
   /// @type {Real}
-  var pulse_wave = (sin(pulse_time) + 1) * 0.5;
+  var ring_alpha = 0.24 + (select_wave * 0.12);
   /// @type {Real}
-  var aura_alpha = 0.12 + (pulse_wave * 0.08);
-  /// @type {Real}
-  var ring_alpha = 0.24 + (pulse_wave * 0.12);
-  /// @type {Real}
-  var ring_radius = tower_range + (pulse_wave * 2);
+  var ring_radius = tower_range + (select_wave * 2);
 
   gpu_set_blendmode(bm_add);
   draw_set_colour(c_ltgray);
@@ -192,29 +192,3 @@ if (tower_upgrade_shine_steps_remaining > 0) {
   draw_set_alpha(1);
 }
 
-if (is_selected) {
-  /// @type {Real}
-  var pip_spacing = 12;
-  /// @type {Real}
-  var pips_start_x = x - (pip_spacing * ((TOWER_MAX_LEVEL - 1) * 0.5));
-  /// @type {Real}
-  var pips_y = y - 26;
-
-  for (var pip_index = 1; pip_index <= TOWER_MAX_LEVEL; pip_index += 1) {
-    /// @type {Real}
-    var pip_x = pips_start_x + ((pip_index - 1) * pip_spacing);
-    /// @type {Bool}
-    var pip_filled = pip_index <= tower_level;
-
-    draw_set_colour(pip_filled ? c_yellow : c_dkgray);
-    draw_set_alpha(pip_filled ? 0.95 : 0.75);
-    draw_circle(pip_x, pips_y, 3, pip_filled);
-
-    draw_set_colour(c_white);
-    draw_set_alpha(0.8);
-    draw_circle(pip_x, pips_y, 3, false);
-  }
-
-  draw_set_colour(c_white);
-  draw_set_alpha(1);
-}
