@@ -82,7 +82,7 @@
   ],
   "name":"SPR_Freeze_VFX",
   "nineSlice":null,
-  "origin":4,
+  "origin":3,
   "parent":{
     "name":"Freeze",
     "path":"folders/Sprites/Freeze.yy",
@@ -311,7 +311,7 @@
     ],
     "visibleRange":null,
     "volume":1.0,
-    "xorigin":210,
+    "xorigin":0,
     "yorigin":72,
   },
   "swatchColours":null,

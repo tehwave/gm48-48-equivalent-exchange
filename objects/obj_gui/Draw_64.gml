@@ -94,7 +94,7 @@ var pop_scale = 1 + (0.14 * sin(pop_t * pi));
 /// @type {Real}
 var pop_alpha = 1 - (0.18 * pop_t);
 
-draw_set_font(fnt_body);
+draw_set_font(fnt_heading);
 draw_set_colour(c_black);
 draw_text_transformed(coin_text_x + 1, coin_text_y + 1, coin_text, pop_scale, pop_scale, 0);
 draw_set_colour(c_yellow);
@@ -501,12 +501,6 @@ if (!global.build_mode && instance_exists(global.selected_tower_id)) {
   var selected_description = scr_get_tower_description(selected_tower_type_index);
   /// @type {Real}
   var selected_level = global.selected_tower_id.tower_level;
-  /// @type {Real}
-  var selected_next_level_for_pips = selected_level + 1;
-  /// @type {Real}
-  var selected_upgrade_cost_for_pips = scr_tower_upgrade_cost(global.selected_tower_id.object_index, selected_next_level_for_pips);
-  /// @type {Bool}
-  var selected_next_level_affordable = (selected_upgrade_cost_for_pips > 0 && global.player_coins >= selected_upgrade_cost_for_pips);
 
   draw_set_font(fnt_heading);
   draw_set_colour(c_white);
@@ -514,25 +508,6 @@ if (!global.build_mode && instance_exists(global.selected_tower_id)) {
   draw_set_font(fnt_body);
   draw_set_colour(c_ltgray);
   draw_text_shadow(selected_panel_x + panel_inner_pad, selected_panel_y + 12 + panel_row_gap, "Lvl " + string(selected_level) + " / " + string(TOWER_MAX_LEVEL));
-
-  /// @type {Real}
-  var panel_pips_x = selected_panel_x + panel_inner_pad + 4;
-  /// @type {Real}
-  var panel_pips_y = selected_panel_y + 12 + (panel_row_gap * 2) - 2;
-  for (var panel_pip_index = 1; panel_pip_index <= TOWER_MAX_LEVEL; panel_pip_index += 1) {
-    /// @type {Bool}
-    var panel_pip_upgraded = panel_pip_index <= selected_level;
-    /// @type {Bool}
-    var panel_pip_upgradeable = (!panel_pip_upgraded && selected_next_level_affordable && panel_pip_index == selected_next_level_for_pips);
-
-    draw_set_colour(panel_pip_upgraded ? c_yellow : c_white);
-    draw_set_alpha((panel_pip_upgraded || panel_pip_upgradeable) ? 1 : 0.9);
-    draw_circle(panel_pips_x + ((panel_pip_index - 1) * 12), panel_pips_y, 3, panel_pip_upgraded || panel_pip_upgradeable);
-    draw_set_colour(c_white);
-    draw_set_alpha(0.8);
-    draw_circle(panel_pips_x + ((panel_pip_index - 1) * 12), panel_pips_y, 3, false);
-  }
-  draw_set_alpha(1);
 
   draw_set_colour(c_ltgray);
   draw_text_shadow(
@@ -616,40 +591,157 @@ if (global.game_state == GAME_STATE_INTRO) {
   var intro_seconds_remaining = ceil(global.intro_lock_timer_steps / room_speed);
   /// @type {String}
   var continue_prompt = "Press [Space] to begin";
+  /// @type {Real}
+  var intro_anim_t = current_time * 0.008;
+  /// @type {Real}
+  var intro_panel_width = min(intro_gui_width - 56, 1140);
+  /// @type {Real}
+  var intro_panel_height = min(intro_gui_height - 118, 560);
+  /// @type {Real}
+  var intro_panel_x = (intro_gui_width - intro_panel_width) * 0.5;
+  /// @type {Real}
+  var intro_panel_y = (intro_gui_height - intro_panel_height) * 0.5;
+  /// @type {Bool}
+  var intro_use_vertical_cards = intro_panel_width < 900;
+  /// @type {Real}
+  var intro_card_outer_margin = 20;
+  /// @type {Real}
+  var intro_card_gap = 14;
+  /// @type {Real}
+  var intro_cards_top = intro_panel_y + 156;
+  /// @type {Real}
+  var intro_cards_bottom = intro_panel_y + intro_panel_height - 94;
+  /// @type {Real}
+  var intro_cards_area_height = max(180, intro_cards_bottom - intro_cards_top);
+  /// @type {Real}
+  var intro_card_width = intro_use_vertical_cards
+    ? (intro_panel_width - (intro_card_outer_margin * 2))
+    : ((intro_panel_width - (intro_card_outer_margin * 2) - (intro_card_gap * 2)) / 3);
+  /// @type {Real}
+  var intro_card_height = intro_use_vertical_cards
+    ? ((intro_cards_area_height - (intro_card_gap * 2)) / 3)
+    : intro_cards_area_height;
+  /// @type {Asset.GMSprite|Real}
+  var intro_tower_sprite = object_get_sprite(obj_tower_arrow);
+  /// @type {Asset.GMSprite|Real}
+  var intro_upgrade_sprite = object_get_sprite(obj_tower_cannon);
+
+  if (intro_tower_sprite == -1) intro_tower_sprite = spr_tower_base;
+  if (intro_upgrade_sprite == -1) intro_upgrade_sprite = spr_tower_base;
 
   if (global.intro_lock_timer_steps > 0) {
     continue_prompt = "Press [Space] in " + string(intro_seconds_remaining) + "s";
   }
 
   scr_draw_rounded_panel(0, 0, intro_gui_width, intro_gui_height, 0.72, 0);
+  scr_draw_rounded_panel(intro_panel_x, intro_panel_y, intro_panel_width, intro_panel_height, 0.66, 24);
 
   draw_set_halign(fa_center);
-  draw_set_valign(fa_middle);
+  draw_set_valign(fa_top);
   draw_set_font(fnt_heading);
   draw_set_colour(c_white);
-  draw_text_shadow(
-    intro_center_x,
-    intro_center_y - 110,
-    "EQUIVALENT EXCHANGE"
-  );
+  draw_text_shadow(intro_center_x, intro_panel_y + 18, "EQUIVALENT EXCHANGE");
 
   draw_set_font(fnt_body);
   draw_set_colour(c_yellow);
-  draw_text_shadow(
-    intro_center_x,
-    intro_center_y - 24,
-    "Life is your currency.\nSpend Life to place towers."
-  );
+  draw_text_shadow(intro_center_x, intro_panel_y + 56, "Every gain has a cost. Every cost is visible.");
 
-  draw_set_colour(c_aqua);
-  draw_text_shadow(
-    intro_center_x,
-    intro_center_y + 48,
-    "Leaks also cost Life.\nKills grant Coins for upgrades ([U]).\nDelete selected tower with [X] for Life only (no coins)."
-  );
+  draw_set_colour(make_color_rgb(255, 146, 140));
+  draw_text_shadow(intro_center_x, intro_panel_y + 84, "Overbuild and you bleed Life. Underbuild and leaks bleed it anyway.");
 
+  for (var intro_step_index = 0; intro_step_index < 3; intro_step_index += 1) {
+    /// @type {Real}
+    var intro_card_x = intro_panel_x + intro_card_outer_margin;
+    /// @type {Real}
+    var intro_card_y = intro_cards_top;
+
+    if (intro_use_vertical_cards) {
+      intro_card_y += intro_step_index * (intro_card_height + intro_card_gap);
+    } else {
+      intro_card_x += intro_step_index * (intro_card_width + intro_card_gap);
+    }
+
+    /// @type {Real}
+    var intro_icon_pulse = 0.94 + (0.06 * sin(intro_anim_t + (intro_step_index * 0.85)));
+    /// @type {Real}
+    var intro_icon_spin = sin((intro_anim_t * 0.85) + (intro_step_index * 0.8)) * 4;
+    /// @type {Real}
+    var intro_card_center_x = intro_card_x + (intro_card_width * 0.5);
+    /// @type {Real}
+    var intro_icon_y = intro_card_y + 42;
+    /// @type {String}
+    var intro_step_title = "";
+    /// @type {String}
+    var intro_step_body = "";
+    /// @type {Real}
+    var intro_step_colour = c_white;
+
+    switch (intro_step_index) {
+      case 0:
+        intro_step_title = "1) Spend Life";
+        intro_step_body = "Place towers by paying Life upfront.\nNo Life left means no new defenses.";
+        intro_step_colour = make_color_rgb(255, 134, 198);
+        break;
+      case 1:
+        intro_step_title = "2) Hold The Path";
+        intro_step_body = "Leaks cost Life.\nKills grant Coins for upgrades.";
+        intro_step_colour = c_aqua;
+        break;
+      case 2:
+        intro_step_title = "3) Reinvest Or Recover";
+        intro_step_body = "Spend Coins with [U] to scale power.\nDelete with [X] to reclaim Life only.";
+        intro_step_colour = c_yellow;
+        break;
+    }
+
+    scr_draw_rounded_panel(intro_card_x, intro_card_y, intro_card_width, intro_card_height, 0.58, 16);
+
+    draw_set_font(fnt_body);
+    draw_set_halign(fa_center);
+    draw_set_valign(fa_top);
+    draw_set_colour(intro_step_colour);
+    draw_text_shadow(intro_card_center_x, intro_card_y + 10, intro_step_title);
+
+    draw_set_colour(c_white);
+    draw_text_shadow_ext(intro_card_x + 14, intro_card_y + 102, intro_step_body, 24, intro_card_width - 28, 1, 1);
+
+    switch (intro_step_index) {
+      case 0:
+        draw_set_alpha(0.26);
+        draw_set_colour(make_color_rgb(255, 134, 198));
+        draw_circle(intro_card_center_x, intro_icon_y + 6, 30, false);
+        draw_set_alpha(1);
+        draw_sprite_ext(intro_tower_sprite, 0, intro_card_center_x, intro_icon_y, intro_icon_pulse, intro_icon_pulse, intro_icon_spin, c_white, 1);
+        draw_set_colour(make_color_rgb(255, 134, 198));
+        draw_text_shadow(intro_card_center_x, intro_card_y + 76, "-" + string(TOWER_PLACEMENT_HP_COST) + " Life");
+        break;
+
+      case 1:
+        draw_sprite_ext(spr_mantis_blue, 0, intro_card_center_x - 30, intro_icon_y, intro_icon_pulse, intro_icon_pulse, 0, c_white, 1);
+        draw_sprite_ext(spr_coin, 0, intro_card_center_x + 32, intro_icon_y + 2, 0.8 + (0.08 * sin(intro_anim_t * 1.3)), 0.8 + (0.08 * sin(intro_anim_t * 1.3)), intro_icon_spin * 2.4, c_white, 1);
+        draw_set_colour(c_ltgray);
+        draw_text_shadow(intro_card_center_x, intro_card_y + 76, "Enemy leak <-> coin reward");
+        break;
+
+      case 2:
+        draw_sprite_ext(spr_coin, 0, intro_card_center_x - 34, intro_icon_y + 1, 0.88, 0.88, -intro_icon_spin * 2, c_white, 1);
+        draw_sprite_ext(intro_upgrade_sprite, 0, intro_card_center_x + 24, intro_icon_y, intro_icon_pulse, intro_icon_pulse, intro_icon_spin, c_white, 1);
+        draw_set_colour(c_ltgray);
+        draw_text_shadow(intro_card_center_x, intro_card_y + 76, "[U] upgrades | [X] returns Life");
+        break;
+    }
+  }
+
+  draw_set_halign(fa_center);
+  draw_set_valign(fa_middle);
+  draw_set_font(fnt_body);
   draw_set_colour(c_white);
-  draw_text_shadow(intro_center_x, intro_center_y + 118, continue_prompt);
+  draw_text_shadow(intro_center_x, intro_panel_y + intro_panel_height - 56, continue_prompt);
+
+  if (global.intro_lock_timer_steps <= 0) {
+    draw_set_colour(c_yellow);
+    draw_text_shadow(intro_center_x, intro_panel_y + intro_panel_height - 28, "Tip: choose towers with [1-5] or [Q]/[E] once the run starts");
+  }
 }
 
 if (global.game_state == GAME_STATE_GAME_OVER) {
