@@ -1,5 +1,29 @@
 /// @description Draw tower base with ghosted opacity and hover pulse when placement is valid.
 
+if (!variable_instance_exists(id, "occupied")) {
+  occupied = false;
+}
+
+if (!variable_instance_exists(id, "tower_instance_id")) {
+  tower_instance_id = noone;
+}
+
+if (!variable_instance_exists(id, "base_failed_build_shake_steps_total")) {
+  base_failed_build_shake_steps_total = max(3, round(room_speed * 0.28));
+}
+
+if (!variable_instance_exists(id, "base_failed_build_shake_steps_remaining")) {
+  base_failed_build_shake_steps_remaining = 0;
+}
+
+if (!variable_instance_exists(id, "base_failed_build_shake_strength")) {
+  base_failed_build_shake_strength = 6;
+}
+
+if (!variable_instance_exists(id, "base_failed_build_shake_dir")) {
+  base_failed_build_shake_dir = 1;
+}
+
 if (occupied) exit;
 
 /// @type {Bool}
@@ -26,31 +50,12 @@ if (base_failed_build_shake_steps_remaining > 0) {
 }
 
 if (!occupied) {
-  draw_alpha = 0.52;
-}
-
-/// @type {Real}
-var proximity_alpha_radius = max(1, TOWER_BASE_PROXIMITY_ALPHA_RADIUS);
-/// @type {Real}
-var mouse_distance = point_distance(mouse_x, mouse_y, x, y);
-/// @type {Real}
-var mouse_proximity = clamp(1 - (mouse_distance / proximity_alpha_radius), 0, 1);
-/// @type {Real}
-var gated_mouse_proximity = clamp((mouse_proximity - 0.2) / 0.8, 0, 1);
-/// @type {Real}
-var proximity_alpha_boost = power(gated_mouse_proximity, 2.2) * TOWER_BASE_PROXIMITY_ALPHA_BOOST_MAX;
-
-if (!is_selected_base) {
-  draw_alpha = clamp(draw_alpha + proximity_alpha_boost, 0, 1);
+  draw_alpha = 0.5;
 }
 
 if (hovered && can_place) {
   // Slow pulse between 0.4 and 0.6 alpha to signal valid placement.
   draw_alpha = 0.75 + (sin(current_time * 0.004) * 0.1);
-}
-
-if ((hovered && can_place) && !is_selected_base) {
-  draw_alpha = clamp(draw_alpha + proximity_alpha_boost, 0, 1);
 }
 
 if (is_selected_base) {
@@ -163,6 +168,22 @@ if (is_selected_base) {
 
 if (sprite_index != -1) {
   draw_sprite_ext(sprite_index, image_index, x + draw_offset_x, y, image_xscale, image_yscale, image_angle, image_blend, draw_alpha);
+} else {
+  /// @type {Real}
+  var fallback_x = x + draw_offset_x;
+  /// @type {Real}
+  var fallback_outer_radius = 22;
+  /// @type {Real}
+  var fallback_inner_radius = 15;
+
+  // Fallback marker so bases remain visible when no sprite is bound.
+  draw_set_alpha(draw_alpha * 0.28);
+  draw_set_colour(c_black);
+  draw_circle(fallback_x, y, fallback_outer_radius, false);
+
+  draw_set_alpha(draw_alpha * 0.7);
+  draw_set_colour(c_white);
+  draw_circle(fallback_x, y, fallback_inner_radius, false);
 }
 
 draw_set_colour(c_white);

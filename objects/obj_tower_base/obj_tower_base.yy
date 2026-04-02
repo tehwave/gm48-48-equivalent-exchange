@@ -39,7 +39,10 @@
   "resourceType": "GMObject",
   "resourceVersion": "2.0",
   "solid": false,
-  "spriteId": null,
+  "spriteId": {
+    "name": "spr_tower_base",
+    "path": "sprites/spr_tower_base/spr_tower_base.yy",
+  },
   "spriteMaskId": null,
   "visible": true,
 }
