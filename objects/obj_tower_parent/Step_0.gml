@@ -46,7 +46,11 @@ target_id = scr_find_tower_target(id, tower_range);
 
 if (instance_exists(target_id)) {
   tower_facing_angle = point_direction(x, y, target_id.x, target_id.y);
-  image_angle = tower_facing_angle;
+  if (tower_sprite_rotates_to_target) {
+    image_angle = tower_facing_angle;
+  } else {
+    image_angle = 0;
+  }
 
   if (tower_directional_sprite_enabled) {
     /// @type {Real}
@@ -65,7 +69,10 @@ if (instance_exists(target_id)) {
       tower_directional_sprite_index = direction_index;
 
       /// @type {String}
-      var directional_suffix = string_format(tower_directional_sprite_index, 2, 0);
+      var directional_suffix = string(tower_directional_sprite_index);
+      if (tower_directional_sprite_index < 10) {
+        directional_suffix = "0" + directional_suffix;
+      }
       var directional_sprite_name = tower_directional_sprite_prefix + "_" + directional_suffix;
       /// @type {Asset.GMSprite|Real}
       var directional_sprite_asset = asset_get_index(directional_sprite_name);
@@ -80,6 +87,10 @@ if (instance_exists(target_id)) {
       }
     }
   }
+}
+
+if (!tower_sprite_rotates_to_target) {
+  image_angle = 0;
 }
 
 if (!instance_exists(target_id)) exit;

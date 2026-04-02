@@ -45,7 +45,7 @@ if (tower_fire_recoil_steps_remaining > 0) {
   var recoil_impulse = sin((1 - recoil_progress) * pi);
   draw_scale_x *= 1 + (0.12 * recoil_progress);
   draw_scale_y *= 1 - (0.10 * recoil_progress);
-  if (!tower_directional_sprite_enabled) {
+  if (!tower_directional_sprite_enabled && tower_sprite_rotates_to_target) {
     draw_angle += tower_fire_wiggle_dir * recoil_impulse * 8 * recoil_progress;
   }
   draw_offset_y += recoil_progress * 3;
@@ -104,18 +104,25 @@ if (is_selected && tower_range > 0) {
   var ring_alpha = 0.24 + (select_wave * 0.12);
   /// @type {Real}
   var ring_radius = tower_range + (select_wave * 2);
+  /// @type {Real}
+  var ring_thickness = max(2, ring_radius * 0.2);
+  /// @type {Real}
+  var ring_start = max(1, ring_radius - (ring_thickness * 0.5));
+  /// @type {Real}
+  var ring_end = ring_radius + (ring_thickness * 0.5);
 
   gpu_set_blendmode(bm_add);
   draw_set_colour(c_ltgray);
-  draw_set_alpha(aura_alpha * 0.5);
-  draw_circle(x, y, ring_radius, true);
-
   draw_set_alpha(aura_alpha);
-  draw_circle(x, y, ring_radius, false);
+  for (var ring_step = ring_start; ring_step <= ring_end; ring_step += 1) {
+    draw_circle(x, y, ring_step, true);
+  }
 
   draw_set_alpha(ring_alpha);
   draw_set_colour(c_white);
-  draw_circle(x, y, ring_radius - 1, false);
+  for (var ring_highlight_step = ring_start; ring_highlight_step <= ring_end; ring_highlight_step += 1) {
+    draw_circle(x, y, ring_highlight_step - 1, true);
+  }
 
   gpu_set_blendmode(bm_normal);
   draw_set_alpha(1);

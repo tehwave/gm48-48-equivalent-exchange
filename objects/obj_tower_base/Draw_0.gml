@@ -43,18 +43,25 @@ if (is_selected_base) {
     var ring_alpha = 0.24 + (pulse_wave * 0.12);
     /// @type {Real}
     var ring_radius = tower_range + (pulse_wave * 2);
+    /// @type {Real}
+    var ring_thickness = max(2, ring_radius * 0.2);
+    /// @type {Real}
+    var ring_start = max(1, ring_radius - (ring_thickness * 0.5));
+    /// @type {Real}
+    var ring_end = ring_radius + (ring_thickness * 0.5);
 
     // Draw range ring first so it stays under the base sprite.
     draw_set_colour(c_ltgray);
-    draw_set_alpha(aura_alpha * 0.4);
-    draw_circle(x, y, ring_radius, true);
-
     draw_set_alpha(aura_alpha);
-    draw_circle(x, y, ring_radius, false);
+    for (var ring_step = ring_start; ring_step <= ring_end; ring_step += 1) {
+      draw_circle(x, y, ring_step, true);
+    }
 
     draw_set_alpha(ring_alpha);
     draw_set_colour(c_white);
-    draw_circle(x, y, ring_radius - 1, false);
+    for (var ring_highlight_step = ring_start; ring_highlight_step <= ring_end; ring_highlight_step += 1) {
+      draw_circle(x, y, ring_highlight_step - 1, true);
+    }
   }
 }
 

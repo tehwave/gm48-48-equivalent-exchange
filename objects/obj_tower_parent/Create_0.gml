@@ -29,6 +29,7 @@ tower_attack_vfx_draw_above_tower = true;
 
 tower_spawn_anim_steps_total = max(1, round(room_speed * 0.30));
 tower_facing_angle = 0;
+tower_sprite_rotates_to_target = true;
 tower_directional_sprite_enabled = false;
 tower_directional_sprite_prefix = "";
 tower_directional_sprite_index = 1;
@@ -55,6 +56,7 @@ if (object_index == obj_tower_arrow) {
 	tower_attack_vfx_distance = 22;
 } else if (object_index == obj_tower_slow) {
 	tower_directional_sprite_enabled = false;
+	tower_sprite_rotates_to_target = false;
 	tower_directional_sprite_prefix = "SPR_Slow";
 	tower_attack_vfx_sprite = SPR_Slow_VFX;
 	tower_attack_vfx_scale = 1;
@@ -72,10 +74,11 @@ if (object_index == obj_tower_arrow) {
 	tower_attack_vfx_scale = 0.7;
 	tower_attack_vfx_angle_offset = 0;
 	tower_attack_vfx_distance = 14;
-	tower_attack_vfx_draw_above_tower = false;
+	tower_attack_vfx_draw_above_tower = true;
 	tower_sprite_scale = 0.84;
 } else if (freeze_object != -1 && object_index == freeze_object) {
 	tower_directional_sprite_enabled = false;
+	tower_sprite_rotates_to_target = false;
 	tower_directional_sprite_prefix = "SPR_Freeze";
 	tower_attack_vfx_sprite = SPR_Freeze_VFX;
 	tower_attack_vfx_scale = 0.72;
