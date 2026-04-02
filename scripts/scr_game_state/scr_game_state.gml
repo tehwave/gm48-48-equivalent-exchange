@@ -42,117 +42,42 @@ function scr_draw_panel_blur_backdrop(px, py, pw, ph) {
   /// @type {Real}
   var source_height = clamp(ph * surface_scale_y, 1, app_surface_height - source_y);
 
-  /// @type {Real}
-  var blur_surface_width = max(8, round(source_width / max(1, PANEL_BLUR_DOWNSAMPLE)));
-  /// @type {Real}
-  var blur_surface_height = max(8, round(source_height / max(1, PANEL_BLUR_DOWNSAMPLE)));
-
-  if (!variable_global_exists("panel_blur_surface_a")) global.panel_blur_surface_a = -1;
-  if (!variable_global_exists("panel_blur_surface_b")) global.panel_blur_surface_b = -1;
-  if (!variable_global_exists("panel_blur_surface_w")) global.panel_blur_surface_w = 0;
-  if (!variable_global_exists("panel_blur_surface_h")) global.panel_blur_surface_h = 0;
-
-  /// Recreate pooled blur surfaces only when current panel needs a larger allocation.
-  if (
-    !surface_exists(global.panel_blur_surface_a) ||
-    !surface_exists(global.panel_blur_surface_b) ||
-    global.panel_blur_surface_w < blur_surface_width ||
-    global.panel_blur_surface_h < blur_surface_height
-  ) {
-    if (surface_exists(global.panel_blur_surface_a)) surface_free(global.panel_blur_surface_a);
-    if (surface_exists(global.panel_blur_surface_b)) surface_free(global.panel_blur_surface_b);
-
-    global.panel_blur_surface_w = blur_surface_width;
-    global.panel_blur_surface_h = blur_surface_height;
-    global.panel_blur_surface_a = surface_create(global.panel_blur_surface_w, global.panel_blur_surface_h);
-    global.panel_blur_surface_b = surface_create(global.panel_blur_surface_w, global.panel_blur_surface_h);
-  }
-
-  /// @type {Real}
-  var blur_active_w = blur_surface_width;
-  /// @type {Real}
-  var blur_active_h = blur_surface_height;
-  /// @type {Real}
-  var capture_scale_x = blur_active_w / source_width;
-  /// @type {Real}
-  var capture_scale_y = blur_active_h / source_height;
-
-  gpu_set_texfilter(true);
-
-  surface_set_target(global.panel_blur_surface_a);
-  draw_clear_alpha(c_black, 0);
-  draw_set_alpha(1);
-  draw_set_colour(c_white);
-  draw_surface_part_ext(application_surface, source_x, source_y, source_width, source_height, 0, 0, capture_scale_x, capture_scale_y, c_white, 1);
-  surface_reset_target();
-
-  /// @type {Real}
-  var surface_a = global.panel_blur_surface_a;
-  /// @type {Real}
-  var surface_b = global.panel_blur_surface_b;
+  /// A stable multi-tap blur that samples application_surface directly.
   /// @type {Real}
   var blur_pass_count = max(1, round(PANEL_BLUR_PASSES));
+  /// @type {Real}
+  var blur_alpha_total = clamp(PANEL_BLUR_ALPHA, 0, 1);
+  /// @type {Real}
+  var blur_alpha_per_pass = blur_alpha_total / blur_pass_count;
+  /// @type {Real}
+  var blur_tint_strength = clamp(PANEL_BLUR_TINT_STRENGTH, 0, 1);
+  /// @type {Real}
+  var blur_tint_colour = merge_colour(c_white, make_color_rgb(176, 210, 255), blur_tint_strength);
+
+  gpu_set_texfilter(true);
+  draw_set_colour(blur_tint_colour);
 
   for (var blur_pass = 0; blur_pass < blur_pass_count; blur_pass += 1) {
     /// @type {Real}
-    var blur_radius = max(0.5, (blur_pass + 1) * PANEL_BLUR_PASS_STEP);
+    var blur_radius_x = (PANEL_BLUR_SAMPLE_OFFSET + ((blur_pass + 1) * PANEL_BLUR_PASS_STEP)) * surface_scale_x;
+    /// @type {Real}
+    var blur_radius_y = (PANEL_BLUR_SAMPLE_OFFSET + ((blur_pass + 1) * PANEL_BLUR_PASS_STEP)) * surface_scale_y;
 
-    // Horizontal Gaussian sample pass.
-    surface_set_target(surface_b);
-    draw_clear_alpha(c_black, 0);
-    draw_set_colour(c_white);
+    draw_set_alpha(blur_alpha_per_pass * 0.30);
+    draw_surface_part_ext(application_surface, source_x, source_y, source_width, source_height, px, py, pw / source_width, ph / source_height, blur_tint_colour, 1);
 
-    draw_set_alpha(0.227027);
-    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, 0, 0, 1, 1, c_white, 1);
+    draw_set_alpha(blur_alpha_per_pass * 0.12);
+    draw_surface_part_ext(application_surface, clamp(source_x - blur_radius_x, 0, app_surface_width - source_width), source_y, source_width, source_height, px, py, pw / source_width, ph / source_height, blur_tint_colour, 1);
+    draw_surface_part_ext(application_surface, clamp(source_x + blur_radius_x, 0, app_surface_width - source_width), source_y, source_width, source_height, px, py, pw / source_width, ph / source_height, blur_tint_colour, 1);
+    draw_surface_part_ext(application_surface, source_x, clamp(source_y - blur_radius_y, 0, app_surface_height - source_height), source_width, source_height, px, py, pw / source_width, ph / source_height, blur_tint_colour, 1);
+    draw_surface_part_ext(application_surface, source_x, clamp(source_y + blur_radius_y, 0, app_surface_height - source_height), source_width, source_height, px, py, pw / source_width, ph / source_height, blur_tint_colour, 1);
 
-    draw_set_alpha(0.1945946);
-    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, -blur_radius, 0, 1, 1, c_white, 1);
-    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, blur_radius, 0, 1, 1, c_white, 1);
-
-    draw_set_alpha(0.1216216);
-    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, -(blur_radius * 2), 0, 1, 1, c_white, 1);
-    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, blur_radius * 2, 0, 1, 1, c_white, 1);
-
-    draw_set_alpha(0.054054);
-    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, -(blur_radius * 3), 0, 1, 1, c_white, 1);
-    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, blur_radius * 3, 0, 1, 1, c_white, 1);
-
-    draw_set_alpha(0.016216);
-    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, -(blur_radius * 4), 0, 1, 1, c_white, 1);
-    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, blur_radius * 4, 0, 1, 1, c_white, 1);
-    surface_reset_target();
-
-    // Vertical Gaussian sample pass.
-    surface_set_target(surface_a);
-    draw_clear_alpha(c_black, 0);
-    draw_set_colour(c_white);
-
-    draw_set_alpha(0.227027);
-    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, 0, 1, 1, c_white, 1);
-
-    draw_set_alpha(0.1945946);
-    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, -blur_radius, 1, 1, c_white, 1);
-    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, blur_radius, 1, 1, c_white, 1);
-
-    draw_set_alpha(0.1216216);
-    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, -(blur_radius * 2), 1, 1, c_white, 1);
-    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, blur_radius * 2, 1, 1, c_white, 1);
-
-    draw_set_alpha(0.054054);
-    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, -(blur_radius * 3), 1, 1, c_white, 1);
-    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, blur_radius * 3, 1, 1, c_white, 1);
-
-    draw_set_alpha(0.016216);
-    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, -(blur_radius * 4), 1, 1, c_white, 1);
-    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, blur_radius * 4, 1, 1, c_white, 1);
-    surface_reset_target();
+    draw_set_alpha(blur_alpha_per_pass * 0.06);
+    draw_surface_part_ext(application_surface, clamp(source_x - blur_radius_x, 0, app_surface_width - source_width), clamp(source_y - blur_radius_y, 0, app_surface_height - source_height), source_width, source_height, px, py, pw / source_width, ph / source_height, blur_tint_colour, 1);
+    draw_surface_part_ext(application_surface, clamp(source_x + blur_radius_x, 0, app_surface_width - source_width), clamp(source_y - blur_radius_y, 0, app_surface_height - source_height), source_width, source_height, px, py, pw / source_width, ph / source_height, blur_tint_colour, 1);
+    draw_surface_part_ext(application_surface, clamp(source_x - blur_radius_x, 0, app_surface_width - source_width), clamp(source_y + blur_radius_y, 0, app_surface_height - source_height), source_width, source_height, px, py, pw / source_width, ph / source_height, blur_tint_colour, 1);
+    draw_surface_part_ext(application_surface, clamp(source_x + blur_radius_x, 0, app_surface_width - source_width), clamp(source_y + blur_radius_y, 0, app_surface_height - source_height), source_width, source_height, px, py, pw / source_width, ph / source_height, blur_tint_colour, 1);
   }
-
-  /// @type {Real}
-  var blur_alpha = clamp(PANEL_BLUR_ALPHA, 0, 1);
-  draw_set_alpha(blur_alpha);
-  draw_set_colour(c_white);
-  draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, px, py, pw / blur_active_w, ph / blur_active_h, c_white, 1);
 
   gpu_set_texfilter(false);
   draw_set_alpha(1);
