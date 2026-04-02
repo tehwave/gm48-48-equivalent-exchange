@@ -8,6 +8,8 @@ proj_radius = variable_instance_exists(id, "proj_radius") ? proj_radius : 48;
 proj_speed = variable_instance_exists(id, "proj_speed") ? proj_speed : 8;
 proj_angle_offset = variable_instance_exists(id, "proj_angle_offset") ? proj_angle_offset : 0;
 proj_source_tower_id = variable_instance_exists(id, "proj_source_tower_id") ? proj_source_tower_id : noone;
+proj_has_impacted = false;
+proj_impact_vfx_sprite = vfx_cannon_hit;
 
 image_xscale = 0.09;
 image_yscale = 0.09;

@@ -10,5 +10,5 @@ void main() {
   col += texture2D(gm_BaseTexture, v_vTexcoord - (u_blur_step * 1.3846153846)) * 0.3162162162;
   col += texture2D(gm_BaseTexture, v_vTexcoord + (u_blur_step * 3.2307692308)) * 0.0702702703;
   col += texture2D(gm_BaseTexture, v_vTexcoord - (u_blur_step * 3.2307692308)) * 0.0702702703;
-  gl_FragColor = v_vColour * col;
+  gl_FragColor = vec4(v_vColour.rgb * col.rgb, v_vColour.a);
 }

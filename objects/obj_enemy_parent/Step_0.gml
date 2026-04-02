@@ -88,7 +88,7 @@ if (travel_step > 0.01) {
 
   while (enemy_track_distance_accumulator >= DECAL_TRACK_STAMP_SPACING) {
     enemy_track_distance_accumulator -= DECAL_TRACK_STAMP_SPACING;
-    game_decals_stamp_track(x + enemy_spawn_offset_x, y + enemy_spawn_offset_y + 2, move_angle, speed_factor);
+    game_decals_stamp_track(x + enemy_spawn_offset_x, y + enemy_spawn_offset_y, move_angle, speed_factor);
   }
 }
 

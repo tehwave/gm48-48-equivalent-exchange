@@ -8,6 +8,14 @@ if (!game_is_running()) {
 // Keep projectile y-sorted with other world instances.
 depth = -y;
 
+if (proj_has_impacted) {
+  var impact_frame_count = sprite_get_number(sprite_index);
+  if (impact_frame_count <= 0 || image_index >= impact_frame_count - 1) {
+    instance_destroy();
+  }
+  exit;
+}
+
 if (instance_exists(proj_target_id)) {
   proj_target_x = proj_target_id.x;
   proj_target_y = proj_target_id.y;
@@ -31,4 +39,10 @@ with (obj_enemy_parent) {
   }
 }
 
-instance_destroy();
+proj_has_impacted = true;
+sprite_index = proj_impact_vfx_sprite;
+image_index = 0;
+image_speed = 1;
+image_xscale = 0.65;
+image_yscale = 0.65;
+image_angle = 0;
