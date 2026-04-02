@@ -24,6 +24,32 @@ if (is_dead) {
 	exit;
 }
 
+/// Basic ground blob shadow for readability.
+/// @type {Real}
+var shadow_boss_scale = (object_index == obj_enemy_boss) ? 1.45 : 1;
+/// @type {Real}
+var shadow_phase = (current_time * 0.018) + (draw_x * 0.06) + (draw_y * 0.04);
+/// @type {Real}
+var shadow_radius_x = (enemy_draw_radius * 1.5 * shadow_boss_scale) + (1.26 * sin(shadow_phase));
+/// @type {Real}
+var shadow_radius_y = (enemy_draw_radius * 0.45 * shadow_boss_scale) + (0.2 * sin(shadow_phase));
+/// @type {Real}
+var shadow_center_x = draw_x + 1;
+/// @type {Real}
+var shadow_center_y = draw_y + enemy_draw_radius - 1;
+
+draw_set_alpha(0.22);
+draw_set_colour(make_color_rgb(48, 54, 58));
+draw_ellipse(
+	shadow_center_x - shadow_radius_x,
+	shadow_center_y - shadow_radius_y,
+	shadow_center_x + shadow_radius_x,
+	shadow_center_y + shadow_radius_y,
+	false
+);
+draw_set_alpha(1);
+draw_set_colour(c_white);
+
 if (sprite_index != -1) {
 	/// @type {Real}
 	var bounce_phase = (current_time * 0.02) + (x * 0.17) + (y * 0.11);

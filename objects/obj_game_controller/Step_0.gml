@@ -152,6 +152,11 @@ if (global.build_mode) {
     if (instance_exists(clicked_base_id) && !clicked_base_id.occupied) {
       target_base_id = clicked_base_id;
       global.build_base_id = clicked_base_id;
+    } else if (!instance_exists(clicked_base_id)) {
+      // Clicking empty space while the build panel is open cancels build mode.
+      global.build_mode = false;
+      global.build_base_id = noone;
+      global.build_click_lock = false;
     }
   }
 

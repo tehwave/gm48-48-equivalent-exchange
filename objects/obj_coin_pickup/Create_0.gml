@@ -1,8 +1,9 @@
 /// @description Initializes dropped coin pickup state and bounce launch.
 
 sprite_index = spr_coin;
-image_speed = 0.28;
+image_speed = 0;
 image_angle = 0;
+image_index = 0;
 
 depth = COIN_DROP_DEPTH;
 
@@ -68,4 +69,11 @@ coin_expire_warn_steps_remaining = 0;
 coin_velocity_x = random_range(-COIN_DROP_HORIZONTAL_SPEED, COIN_DROP_HORIZONTAL_SPEED);
 /// @type {Real}
 coin_velocity_y = -random_range(COIN_DROP_BOUNCE_MIN, COIN_DROP_BOUNCE_MAX);
+
+/// @type {Real}
+coin_spin_phase = random_range(0, pi * 2);
+/// @type {Real}
+coin_spin_speed = random_range(0.08, 0.10);
+/// @type {Real}
+coin_spin_min_width = 0.10;
 

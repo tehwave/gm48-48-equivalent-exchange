@@ -1,6 +1,7 @@
 /// @description Simulates bounce physics and expires coin after a short timer.
 
 if (coin_collected) {
+  coin_spin_phase += coin_spin_speed * 1.6;
   coin_collect_vfx_steps -= 1;
   coin_collect_elapsed_steps += 1;
 
@@ -84,6 +85,8 @@ if (!game_is_running()) {
   instance_destroy();
   exit;
 }
+
+coin_spin_phase += coin_spin_speed;
 
 coin_life_steps -= 1;
 if (coin_life_steps <= 0) {

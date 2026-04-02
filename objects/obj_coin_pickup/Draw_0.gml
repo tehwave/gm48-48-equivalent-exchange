@@ -5,7 +5,7 @@ var height_above_ground = max(0, coin_ground_y - y);
 /// @type {Real}
 var shadow_t = clamp(height_above_ground / 92, 0, 1);
 /// @type {Real}
-var shadow_alpha = lerp(0.54, 0.12, power(shadow_t, 1.08));
+var shadow_alpha = lerp(0.34, 0.09, power(shadow_t, 1.08));
 /// @type {Real}
 var shadow_radius_x = lerp(13.5, 4.2, power(shadow_t, 0.78));
 /// @type {Real}
@@ -16,9 +16,11 @@ var shadow_center_x = x + 2;
 var shadow_center_y = coin_ground_y + 4;
 /// @type {Real}
 var contact_shadow_t = 1 - shadow_t;
+/// @type {Real}
+var shadow_colour = make_color_rgb(48, 54, 58);
 
-draw_set_alpha(max(0.09, shadow_alpha));
-draw_set_colour(c_black);
+draw_set_alpha(max(0.05, shadow_alpha));
+draw_set_colour(shadow_colour);
 draw_ellipse(
   shadow_center_x - shadow_radius_x,
   shadow_center_y - shadow_radius_y,
@@ -28,12 +30,12 @@ draw_ellipse(
 );
 
 // Contact core makes the coin feel grounded when it is near the floor.
-draw_set_alpha(0.22 * power(max(0, contact_shadow_t), 1.4));
+draw_set_alpha(0.12 * power(max(0, contact_shadow_t), 1.5));
 draw_ellipse(
-  shadow_center_x - (shadow_radius_x * 0.56),
-  shadow_center_y - (shadow_radius_y * 0.62),
-  shadow_center_x + (shadow_radius_x * 0.56),
-  shadow_center_y + (shadow_radius_y * 0.62),
+  shadow_center_x - (shadow_radius_x * 0.48),
+  shadow_center_y - (shadow_radius_y * 0.56),
+  shadow_center_x + (shadow_radius_x * 0.48),
+  shadow_center_y + (shadow_radius_y * 0.56),
   false
 );
 
@@ -52,13 +54,15 @@ if (coin_collected) {
   var burst_alpha = 1 - collect_t;
   /// @type {Real}
   var collect_scale = 1 + (0.28 * (1 - collect_t));
+  /// @type {Real}
+  var collect_spin_width = max(coin_spin_min_width, abs(cos(coin_spin_phase)));
 
   draw_sprite_ext(
     sprite_index,
-    image_index,
+    0,
     draw_collect_x,
     draw_collect_y,
-    collect_scale,
+    collect_scale * collect_spin_width,
     collect_scale,
     0,
     c_white,
@@ -84,15 +88,37 @@ if (coin_life_steps <= COIN_DROP_EXPIRE_FLASH_STEPS) {
 
 /// @type {Real}
 var pulse = 1 + (COIN_DROP_PULSE_AMOUNT * sin((current_time * 0.016) + (x * 0.08)));
+/// @type {Real}
+var spin_cos = cos(coin_spin_phase);
+/// @type {Real}
+var spin_width = max(coin_spin_min_width, abs(spin_cos));
+/// @type {Real}
+var spin_side_tint = (spin_cos >= 0) ? c_white : make_color_rgb(214, 182, 116);
+/// @type {Real}
+var edge_glint_alpha = power(1 - clamp(spin_width / max(0.001, coin_spin_min_width * 1.9), 0, 1), 1.9) * 0.58;
 
 draw_sprite_ext(
   sprite_index,
-  image_index,
+  0,
   x,
   y,
-  pulse,
+  pulse * spin_width,
   pulse,
   0,
-  c_white,
+  spin_side_tint,
   expiry_alpha
 );
+
+if (edge_glint_alpha > 0.01) {
+  draw_set_alpha(edge_glint_alpha * expiry_alpha);
+  draw_set_colour(make_color_rgb(255, 243, 201));
+  draw_rectangle(
+    x - 1,
+    y - (7 * pulse),
+    x + 1,
+    y + (7 * pulse),
+    false
+  );
+  draw_set_alpha(1);
+  draw_set_colour(c_white);
+}

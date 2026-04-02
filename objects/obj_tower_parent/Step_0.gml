@@ -103,7 +103,13 @@ if (object_index == obj_tower_arrow) {
 } else if (object_index == obj_tower_slow) {
   audio_play_variation(WAV_Water_Swoosh_1, WAV_Water_Swoosh_2, AUDIO_GAIN_COMBAT, 0.95, 1.05);
   enemy_take_damage(target_id, tower_damage, id);
-  enemy_apply_slow(target_id, tower_slow_factor, tower_slow_duration_steps);
+
+  with (obj_enemy_parent) {
+    if (is_dead || has_leaked) continue;
+    if (point_distance(other.x, other.y, x, y) > other.tower_slow_splash_radius) continue;
+
+    enemy_apply_slow(id, other.tower_slow_factor, other.tower_slow_duration_steps);
+  }
 } else if (object_index == obj_tower_cannon) {
   /// @type {Real}
   var tx = target_id.x;

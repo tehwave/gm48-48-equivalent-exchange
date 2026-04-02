@@ -125,6 +125,8 @@ function scr_tower_apply_level_stats(tower_instance, tower_object, tower_level) 
   /// @type {Real}
   var slow_duration = 0;
   /// @type {Real}
+  var slow_splash_radius = 0;
+  /// @type {Real}
   var splash_radius = 0;
   /// @type {Real}
   var cone_angle = 0;
@@ -156,18 +158,21 @@ function scr_tower_apply_level_stats(tower_instance, tower_object, tower_level) 
       cooldown_seconds = SLOW_L1_COOLDOWN;
       slow_factor = SLOW_L1_FACTOR;
       slow_duration = SLOW_L1_DURATION;
+      slow_splash_radius = SLOW_L1_SPLASH_RADIUS;
     } else if (tower_level == 2) {
       range = SLOW_L2_RANGE;
       damage = SLOW_L2_DAMAGE;
       cooldown_seconds = SLOW_L2_COOLDOWN;
       slow_factor = SLOW_L2_FACTOR;
       slow_duration = SLOW_L2_DURATION;
+      slow_splash_radius = SLOW_L2_SPLASH_RADIUS;
     } else {
       range = SLOW_L3_RANGE;
       damage = SLOW_L3_DAMAGE;
       cooldown_seconds = SLOW_L3_COOLDOWN;
       slow_factor = SLOW_L3_FACTOR;
       slow_duration = SLOW_L3_DURATION;
+      slow_splash_radius = SLOW_L3_SPLASH_RADIUS;
     }
   } else if (tower_object == obj_tower_cannon) {
     if (tower_level == 1) {
@@ -234,6 +239,7 @@ function scr_tower_apply_level_stats(tower_instance, tower_object, tower_level) 
     tower_fire_cooldown_steps = max(1, round(cooldown_seconds * room_speed));
     tower_slow_factor = slow_factor;
     tower_slow_duration_steps = round(slow_duration * room_speed);
+    tower_slow_splash_radius = slow_splash_radius;
     tower_splash_radius = splash_radius;
     tower_cone_angle = cone_angle;
     tower_burn_damage_per_tick = burn_damage;

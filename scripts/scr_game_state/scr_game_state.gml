@@ -9,10 +9,142 @@ function game_is_running() {
 /// @param {Real} py
 /// @param {Real} pw
 /// @param {Real} ph
+/// @returns {Void}
+function scr_draw_panel_blur_backdrop(px, py, pw, ph) {
+  if (PANEL_BLUR_ENABLED != 1) return;
+  if (pw <= 0 || ph <= 0) return;
+  if (!surface_exists(application_surface)) return;
+
+  /// Keep expensive blur passes off very large overlays.
+  /// @type {Real}
+  var gui_width = max(1, display_get_gui_width());
+  /// @type {Real}
+  var gui_height = max(1, display_get_gui_height());
+  /// @type {Real}
+  var panel_area_ratio = (pw * ph) / (gui_width * gui_height);
+  if (panel_area_ratio > PANEL_BLUR_MAX_AREA_RATIO) return;
+
+  /// @type {Real}
+  var app_surface_width = max(1, surface_get_width(application_surface));
+  /// @type {Real}
+  var app_surface_height = max(1, surface_get_height(application_surface));
+  /// @type {Real}
+  var surface_scale_x = app_surface_width / gui_width;
+  /// @type {Real}
+  var surface_scale_y = app_surface_height / gui_height;
+
+  /// @type {Real}
+  var source_x = clamp(px * surface_scale_x, 0, app_surface_width - 1);
+  /// @type {Real}
+  var source_y = clamp(py * surface_scale_y, 0, app_surface_height - 1);
+  /// @type {Real}
+  var source_width = clamp(pw * surface_scale_x, 1, app_surface_width - source_x);
+  /// @type {Real}
+  var source_height = clamp(ph * surface_scale_y, 1, app_surface_height - source_y);
+
+  /// @type {Real}
+  var blur_surface_width = max(8, round(source_width / max(1, PANEL_BLUR_DOWNSAMPLE)));
+  /// @type {Real}
+  var blur_surface_height = max(8, round(source_height / max(1, PANEL_BLUR_DOWNSAMPLE)));
+
+  if (!variable_global_exists("panel_blur_surface_a")) global.panel_blur_surface_a = -1;
+  if (!variable_global_exists("panel_blur_surface_b")) global.panel_blur_surface_b = -1;
+  if (!variable_global_exists("panel_blur_surface_w")) global.panel_blur_surface_w = 0;
+  if (!variable_global_exists("panel_blur_surface_h")) global.panel_blur_surface_h = 0;
+
+  /// Recreate pooled blur surfaces only when current panel needs a larger allocation.
+  if (
+    !surface_exists(global.panel_blur_surface_a) ||
+    !surface_exists(global.panel_blur_surface_b) ||
+    global.panel_blur_surface_w < blur_surface_width ||
+    global.panel_blur_surface_h < blur_surface_height
+  ) {
+    if (surface_exists(global.panel_blur_surface_a)) surface_free(global.panel_blur_surface_a);
+    if (surface_exists(global.panel_blur_surface_b)) surface_free(global.panel_blur_surface_b);
+
+    global.panel_blur_surface_w = blur_surface_width;
+    global.panel_blur_surface_h = blur_surface_height;
+    global.panel_blur_surface_a = surface_create(global.panel_blur_surface_w, global.panel_blur_surface_h);
+    global.panel_blur_surface_b = surface_create(global.panel_blur_surface_w, global.panel_blur_surface_h);
+  }
+
+  /// @type {Real}
+  var blur_w = global.panel_blur_surface_w;
+  /// @type {Real}
+  var blur_h = global.panel_blur_surface_h;
+  /// @type {Real}
+  var capture_scale_x = blur_w / source_width;
+  /// @type {Real}
+  var capture_scale_y = blur_h / source_height;
+
+  gpu_set_texfilter(true);
+
+  surface_set_target(global.panel_blur_surface_a);
+  draw_clear_alpha(c_black, 0);
+  draw_set_alpha(1);
+  draw_set_colour(c_white);
+  draw_surface_part_ext(application_surface, source_x, source_y, source_width, source_height, 0, 0, capture_scale_x, capture_scale_y, c_white, 1);
+  surface_reset_target();
+
+  /// @type {Real}
+  var surface_a = global.panel_blur_surface_a;
+  /// @type {Real}
+  var surface_b = global.panel_blur_surface_b;
+  /// @type {Real}
+  var blur_pass_count = max(1, round(PANEL_BLUR_PASSES));
+
+  for (var blur_pass = 0; blur_pass < blur_pass_count; blur_pass += 1) {
+    /// @type {Real}
+    var blur_radius = (blur_pass + 1) * PANEL_BLUR_PASS_STEP;
+
+    surface_set_target(surface_b);
+    draw_clear_alpha(c_black, 0);
+    draw_set_colour(c_white);
+
+    draw_set_alpha(0.30);
+    draw_surface_ext(surface_a, 0, 0, 1, 1, 0, c_white, 1);
+
+    draw_set_alpha(0.12);
+    draw_surface_ext(surface_a, -blur_radius, 0, 1, 1, 0, c_white, 1);
+    draw_surface_ext(surface_a, blur_radius, 0, 1, 1, 0, c_white, 1);
+    draw_surface_ext(surface_a, 0, -blur_radius, 1, 1, 0, c_white, 1);
+    draw_surface_ext(surface_a, 0, blur_radius, 1, 1, 0, c_white, 1);
+
+    draw_set_alpha(0.055);
+    draw_surface_ext(surface_a, -blur_radius, -blur_radius, 1, 1, 0, c_white, 1);
+    draw_surface_ext(surface_a, blur_radius, -blur_radius, 1, 1, 0, c_white, 1);
+    draw_surface_ext(surface_a, -blur_radius, blur_radius, 1, 1, 0, c_white, 1);
+    draw_surface_ext(surface_a, blur_radius, blur_radius, 1, 1, 0, c_white, 1);
+
+    surface_reset_target();
+
+    /// @type {Real}
+    var surface_swap = surface_a;
+    surface_a = surface_b;
+    surface_b = surface_swap;
+  }
+
+  /// @type {Real}
+  var blur_alpha = clamp(PANEL_BLUR_ALPHA, 0, 1);
+
+  draw_set_alpha(blur_alpha);
+  draw_set_colour(c_white);
+  draw_surface_ext(surface_a, px, py, pw / blur_w, ph / blur_h, 0, c_white, 1);
+
+  gpu_set_texfilter(false);
+  draw_set_alpha(1);
+  draw_set_colour(c_white);
+}
+
+/// @param {Real} px
+/// @param {Real} py
+/// @param {Real} pw
+/// @param {Real} ph
 /// @param {Real} bg_alpha
 /// @param {Real} corner_radius
 /// @returns {Void}
 function scr_draw_rounded_panel(px, py, pw, ph, bg_alpha, corner_radius) {
+  scr_draw_panel_blur_backdrop(px, py, pw, ph);
   draw_set_alpha(clamp(bg_alpha, 0, 1));
   draw_set_colour(c_black);
   draw_roundrect_ext(px, py, px + pw, py + ph, corner_radius, corner_radius, false);
@@ -125,8 +257,9 @@ function game_value_fx_format_amount(amount) {
 /// @param {Real} anchor_y
 /// @param {Real} lifetime_steps
 /// @param {Real} x_spread
+/// @param {Real} main_colour
 /// @returns {Void}
-function game_enqueue_value_fx(value_text, category, anchor_mode, anchor_x, anchor_y, lifetime_steps, x_spread) {
+function game_enqueue_value_fx(value_text, category, anchor_mode, anchor_x, anchor_y, lifetime_steps, x_spread, main_colour) {
   if (!variable_global_exists("value_fx_popups")) {
     /// @type {Array<Struct>}
     global.value_fx_popups = [];
@@ -138,6 +271,8 @@ function game_enqueue_value_fx(value_text, category, anchor_mode, anchor_x, anch
   var popup_life_steps = (argument_count >= 6) ? max(1, round(lifetime_steps)) : game_value_fx_default_life_steps(category);
   /// @type {Real}
   var popup_x_spread = (argument_count >= 7) ? max(0, x_spread) : 0;
+  /// @type {Real}
+  var popup_main_colour = (argument_count >= 8) ? main_colour : -1;
 
   /// @type {Struct}
   var value_popup = {
@@ -147,6 +282,7 @@ function game_enqueue_value_fx(value_text, category, anchor_mode, anchor_x, anch
     anchor_x : anchor_x,
     anchor_y : anchor_y,
     offset_x : (popup_x_spread > 0) ? random_range(-popup_x_spread, popup_x_spread) : 0,
+    main_colour : popup_main_colour,
     life : popup_life_steps,
     max_life : popup_life_steps
   };
@@ -504,6 +640,24 @@ function enemy_register_hit_feedback(enemy_instance, damage) {
   }
 }
 
+/// @description Resolves damage popup colour from source tower type.
+/// @param {Id.Instance|Real} source_tower_id
+/// @returns {Real}
+function game_damage_popup_colour_from_source(source_tower_id) {
+  if (!instance_exists(source_tower_id)) return -1;
+
+  /// @type {Asset.GMObject|Real}
+  var source_object = source_tower_id.object_index;
+
+  if (source_object == obj_tower_arrow) return VALUE_FX_DAMAGE_COLOUR_ARROW;
+  if (source_object == obj_tower_slow) return VALUE_FX_DAMAGE_COLOUR_SLOW;
+  if (source_object == obj_tower_cannon) return VALUE_FX_DAMAGE_COLOUR_CANNON;
+  if (source_object == obj_tower_flamer) return VALUE_FX_DAMAGE_COLOUR_FLAMER;
+  if (source_object == obj_tower_freeze) return VALUE_FX_DAMAGE_COLOUR_FREEZE;
+
+  return -1;
+}
+
 /// @param {Id.Instance} enemy_instance
 /// @param {Real} damage
 /// @param {Id.Instance|Real} source_tower_id
@@ -532,7 +686,16 @@ function enemy_take_damage(enemy_instance, damage, source_tower_id) {
   }
 
   enemy_register_hit_feedback(enemy_instance, damage);
-  game_enqueue_value_fx(game_value_fx_format_amount(damage), VALUE_FX_CATEGORY_DAMAGE, VALUE_FX_ANCHOR_WORLD, enemy_instance.x, enemy_instance.y, VALUE_FX_DAMAGE_LIFE_STEPS, 12);
+  game_enqueue_value_fx(
+    game_value_fx_format_amount(damage),
+    VALUE_FX_CATEGORY_DAMAGE,
+    VALUE_FX_ANCHOR_WORLD,
+    enemy_instance.x,
+    enemy_instance.y,
+    VALUE_FX_DAMAGE_LIFE_STEPS,
+    12,
+    game_damage_popup_colour_from_source(source_tower_id)
+  );
 
   return true;
 }

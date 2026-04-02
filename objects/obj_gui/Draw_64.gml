@@ -167,6 +167,10 @@ for (var value_fx_index = 0; value_fx_index < value_fx_popup_count; value_fx_ind
         break;
     }
 
+    if (value_fx.category == VALUE_FX_CATEGORY_DAMAGE && variable_struct_exists(value_fx, "main_colour") && value_fx.main_colour != -1) {
+      value_fx_main_colour = value_fx.main_colour;
+    }
+
     /// @type {Real}
     var value_fx_fade_t = clamp((value_fx_t - 0.88) / 0.12, 0, 1);
     /// @type {Real}

@@ -10,6 +10,7 @@ tower_damage = 0;
 tower_fire_cooldown_steps = room_speed;
 tower_slow_factor = 1;
 tower_slow_duration_steps = 0;
+tower_slow_splash_radius = 0;
 tower_splash_radius = 0;
 tower_cone_angle = 0;
 tower_burn_damage_per_tick = 0;
