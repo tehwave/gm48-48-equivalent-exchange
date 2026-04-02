@@ -88,6 +88,13 @@ Prefer constants/macros for rapid tuning:
 #macro WAVE_GROWTH 2
 ```
 
+Constant-first balancing rule:
+
+1. When changing gameplay balance values (damage, range, cooldown, costs, durations), update constants/macros first.
+2. Runtime logic should consume those constants instead of embedding balance numbers directly in behavior branches.
+3. Use direct runtime overrides only when a value is truly dynamic and cannot be represented as a stable tuning constant.
+4. For behavior requests like "this tower should not do damage", prefer setting the relevant tower damage constants to `0` and keep existing stat-application flow intact.
+
 Use clear variable names:
 
 - `player_hp`

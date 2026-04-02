@@ -161,21 +161,21 @@ function scr_tower_apply_level_stats(tower_instance, tower_object, tower_level) 
   } else if (tower_object == obj_tower_slow) {
     if (tower_level == 1) {
       range = SLOW_L1_RANGE;
-      damage = 0;
+      damage = SLOW_L1_DAMAGE;
       cooldown_seconds = SLOW_L1_COOLDOWN;
       slow_factor = SLOW_L1_FACTOR;
       slow_duration = SLOW_L1_DURATION;
       slow_splash_radius = SLOW_L1_SPLASH_RADIUS;
     } else if (tower_level == 2) {
       range = SLOW_L2_RANGE;
-      damage = 0;
+      damage = SLOW_L2_DAMAGE;
       cooldown_seconds = SLOW_L2_COOLDOWN;
       slow_factor = SLOW_L2_FACTOR;
       slow_duration = SLOW_L2_DURATION;
       slow_splash_radius = SLOW_L2_SPLASH_RADIUS;
     } else {
       range = SLOW_L3_RANGE;
-      damage = 0;
+      damage = SLOW_L3_DAMAGE;
       cooldown_seconds = SLOW_L3_COOLDOWN;
       slow_factor = SLOW_L3_FACTOR;
       slow_duration = SLOW_L3_DURATION;

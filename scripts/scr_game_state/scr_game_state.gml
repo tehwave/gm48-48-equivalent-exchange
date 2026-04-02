@@ -1103,15 +1103,15 @@ function game_decals_draw_blob(mark, draw_alpha, outer_colour, inner_colour, lob
   /// @type {Real}
   var seed = variable_struct_exists(mark, "seed") ? mark.seed : ((mark.x * 17) + (mark.y * 11) + (mark.size * 9));
 
-  draw_set_alpha(draw_alpha * 0.85);
+  draw_set_alpha(clamp(draw_alpha * 1.08, 0, 1));
   draw_set_colour(outer_colour);
-  draw_circle(mark.x, mark.y, max(1, mark.size * 0.48), false);
+  draw_circle(mark.x, mark.y, max(1.2, mark.size * 0.62), false);
 
-  for (var i = 0; i < lobe_count; i += 1) {
+  for (var i = 0; i < lobe_count + 2; i += 1) {
     /// @type {Real}
     var angle = game_decals_noise(seed, i + 1) * 360;
     /// @type {Real}
-    var dist = mark.size * (0.18 + (game_decals_noise(seed, 40 + i) * 0.72));
+    var dist = mark.size * (0.12 + (game_decals_noise(seed, 40 + i) * 0.78));
     /// @type {Real}
     var radius = max(1, mark.size * (0.20 + (game_decals_noise(seed, 80 + i) * 0.36)));
 
@@ -1123,10 +1123,10 @@ function game_decals_draw_blob(mark, draw_alpha, outer_colour, inner_colour, lob
     );
   }
 
-  draw_set_alpha(draw_alpha * 0.6);
+  draw_set_alpha(clamp(draw_alpha * 0.88, 0, 1));
   draw_set_colour(inner_colour);
 
-  for (var j = 0; j < max(2, floor(lobe_count * 0.55)); j += 1) {
+  for (var j = 0; j < max(3, floor(lobe_count * 0.82)); j += 1) {
     /// @type {Real}
     var inner_angle = game_decals_noise(seed, 140 + j) * 360;
     /// @type {Real}
@@ -1152,9 +1152,9 @@ function game_decals_draw_track(mark, draw_alpha) {
   /// @type {Real}
   var pair_offset = DECAL_TRACK_PAIR_OFFSET * mark.size;
   /// @type {Real}
-  var track_colour = make_color_rgb(60, 52, 46);
+  var track_colour = make_color_rgb(32, 27, 24);
 
-  draw_set_alpha(draw_alpha);
+  draw_set_alpha(clamp(draw_alpha * 1.18, 0, 1));
   draw_set_colour(track_colour);
 
   for (var side = 0; side < 2; side += 1) {
@@ -1167,13 +1167,13 @@ function game_decals_draw_track(mark, draw_alpha) {
     /// @type {Real}
     var side_y = mark.y + lengthdir_y(pair_offset, mark.angle + (90 * side_sign));
 
-    for (var seg = 0; seg < 3; seg += 1) {
+    for (var seg = 0; seg < 4; seg += 1) {
       /// @type {Real}
-      var seg_dist = (seg - 1) * (mark.size * 1.8);
+      var seg_dist = (seg - 1.5) * (mark.size * 1.65);
       /// @type {Real}
       var seg_jitter = (game_decals_noise(seed, 240 + side_seed_offset + seg) * 2 - 1) * (mark.size * 0.42);
       /// @type {Real}
-      var seg_radius = max(0.75, mark.size * (0.62 + (game_decals_noise(seed, 280 + side_seed_offset + seg) * 0.40)));
+      var seg_radius = max(1.1, mark.size * (0.78 + (game_decals_noise(seed, 280 + side_seed_offset + seg) * 0.44)));
 
       draw_circle(
         side_x + lengthdir_x(seg_dist, mark.angle) + lengthdir_x(seg_jitter, mark.angle + 90),
@@ -1197,23 +1197,23 @@ function game_decals_draw_mark(mark, alpha_override) {
 
   switch (mark.type) {
     case DECAL_TYPE_BLOOD:
-      game_decals_draw_blob(mark, draw_alpha, make_color_rgb(120, 32, 28), make_color_rgb(88, 18, 16), 5);
+      game_decals_draw_blob(mark, draw_alpha, make_color_rgb(132, 24, 20), make_color_rgb(82, 10, 8), 6);
       break;
 
     case DECAL_TYPE_ICE:
-      game_decals_draw_blob(mark, draw_alpha, make_color_rgb(138, 202, 255), make_color_rgb(196, 238, 255), 4);
+      game_decals_draw_blob(mark, draw_alpha, make_color_rgb(150, 215, 255), make_color_rgb(218, 246, 255), 6);
       break;
 
     case DECAL_TYPE_QUAKE:
-      game_decals_draw_blob(mark, draw_alpha, make_color_rgb(116, 100, 88), make_color_rgb(92, 80, 72), 6);
+      game_decals_draw_blob(mark, draw_alpha, make_color_rgb(122, 104, 90), make_color_rgb(78, 66, 58), 7);
       break;
 
     case DECAL_TYPE_FLAME:
-      game_decals_draw_blob(mark, draw_alpha, make_color_rgb(255, 124, 54), make_color_rgb(136, 42, 22), 5);
+      game_decals_draw_blob(mark, draw_alpha, make_color_rgb(255, 116, 34), make_color_rgb(120, 24, 8), 6);
       break;
 
     case DECAL_TYPE_SLOW:
-      game_decals_draw_blob(mark, draw_alpha, make_color_rgb(112, 122, 66), make_color_rgb(82, 95, 48), 5);
+      game_decals_draw_blob(mark, draw_alpha, make_color_rgb(122, 136, 58), make_color_rgb(64, 78, 29), 6);
       break;
 
     case DECAL_TYPE_TRACK:
