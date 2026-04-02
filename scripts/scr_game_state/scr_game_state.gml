@@ -28,7 +28,8 @@ function scr_get_tower_description(tower_type_index) {
     name : "Unknown",
     damage_type : "-",
     special : "-",
-    hp_cost : TOWER_PLACEMENT_HP_COST
+    hp_cost : TOWER_PLACEMENT_HP_COST,
+    range : 0
   };
 
   switch (tower_type_index) {
@@ -36,26 +37,36 @@ function scr_get_tower_description(tower_type_index) {
       tower_description.name = "Arrow";
       tower_description.damage_type = "Single target";
       tower_description.special = "Fast direct damage";
+      tower_description.hp_cost = max(1, TOWER_PLACEMENT_HP_COST - 1);
+      tower_description.range = ARROW_L1_RANGE;
       break;
     case 1:
       tower_description.name = "Slow";
       tower_description.damage_type = "Single target";
       tower_description.special = "Applies movement slow";
+      tower_description.hp_cost = TOWER_PLACEMENT_HP_COST;
+      tower_description.range = SLOW_L1_RANGE;
       break;
     case 2:
       tower_description.name = "Cannon";
       tower_description.damage_type = "Splash";
       tower_description.special = "Area explosion";
+      tower_description.hp_cost = TOWER_PLACEMENT_HP_COST;
+      tower_description.range = CANNON_L1_RANGE;
       break;
     case 3:
       tower_description.name = "Flamer";
       tower_description.damage_type = "Cone";
       tower_description.special = "Applies burn over time";
+      tower_description.hp_cost = TOWER_PLACEMENT_HP_COST;
+      tower_description.range = FLAMER_L1_RANGE;
       break;
     case 4:
       tower_description.name = "Freeze";
       tower_description.damage_type = "Single target";
       tower_description.special = "Temporarily freezes";
+      tower_description.hp_cost = TOWER_PLACEMENT_HP_COST;
+      tower_description.range = FREEZE_L1_RANGE;
       break;
   }
 
@@ -117,7 +128,9 @@ function game_delete_selected_tower_refund_life() {
   /// @type {Id.Instance|Real}
   var base_owner_id = variable_instance_exists(selected_tower_id, "base_owner_id") ? selected_tower_id.base_owner_id : noone;
 
-  global.player_hp += TOWER_PLACEMENT_HP_COST;
+  /// @type {Real}
+  var placement_refund_hp = variable_instance_exists(selected_tower_id, "tower_placement_hp_cost") ? selected_tower_id.tower_placement_hp_cost : TOWER_PLACEMENT_HP_COST;
+  global.player_hp += placement_refund_hp;
   if (instance_exists(base_owner_id)) {
     with (base_owner_id) {
       occupied = false;

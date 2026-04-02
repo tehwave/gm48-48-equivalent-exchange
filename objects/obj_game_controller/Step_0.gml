@@ -72,6 +72,7 @@ if (global.game_state == GAME_STATE_GAME_OVER || global.game_state == GAME_STATE
 if (!game_is_running()) {
   global.build_mode = false;
   global.build_base_id = noone;
+  global.build_click_lock = false;
   global.confirm_action = "";
   global.confirm_timer_steps = 0;
   exit;
@@ -98,6 +99,8 @@ var key_x = keyboard_check_pressed(ord("X"));
 /// @type {Bool}
 var key_enter = keyboard_check_pressed(vk_enter);
 /// @type {Bool}
+var key_b = keyboard_check_pressed(ord("B"));
+/// @type {Bool}
 var key_escape = keyboard_check_pressed(vk_escape);
 /// @type {Bool}
 var mouse_left = mouse_check_button_pressed(mb_left);
@@ -113,6 +116,7 @@ if (mouse_right) {
   if (global.build_mode) {
     global.build_mode = false;
     global.build_base_id = noone;
+    global.build_click_lock = false;
   } else {
     global.selected_tower_id = noone;
   }
@@ -132,12 +136,17 @@ if (global.build_mode) {
   if (key_escape) {
     global.build_mode = false;
     global.build_base_id = noone;
+    global.build_click_lock = false;
+  }
+
+  if (global.build_click_lock && !mouse_check_button(mb_left)) {
+    global.build_click_lock = false;
   }
 
   /// @type {Id.Instance|Real}
   var target_base_id = global.build_base_id;
 
-  if (mouse_left) {
+  if (mouse_left && !global.build_click_lock) {
     /// @type {Id.Instance|Real}
     var clicked_base_id = instance_position(mouse_x, mouse_y, obj_tower_base);
     if (instance_exists(clicked_base_id) && !clicked_base_id.occupied) {
@@ -147,28 +156,30 @@ if (global.build_mode) {
   }
 
   /// @type {Bool}
-  var build_confirmed = key_enter;
-  if (mouse_left && instance_exists(target_base_id)) {
-    /// @type {Id.Instance|Real}
-    var clicked_confirm_base = instance_position(mouse_x, mouse_y, obj_tower_base);
-    build_confirmed = build_confirmed || (clicked_confirm_base == target_base_id);
-  }
+  var build_confirmed = key_enter || key_b;
 
   if (build_confirmed && instance_exists(target_base_id) && !target_base_id.occupied) {
     /// @type {Asset.GMObject|Real}
     var tower_object = scr_get_selected_tower_object();
+    /// @type {Struct}
+    var selected_tower_description = scr_get_tower_description(global.selected_tower_type);
+    /// @type {Real}
+    var placement_hp_cost = selected_tower_description.hp_cost;
+
     if (tower_object == noone) {
       audio_play_variation(WAV_Snake_Hiss_1, WAV_Snake_Hiss_2, AUDIO_GAIN_UI * 0.42, 0.95, 1.05);
-    } else if (!game_try_spend_hp(TOWER_PLACEMENT_HP_COST)) {
+    } else if (!game_try_spend_hp(placement_hp_cost)) {
       audio_play_variation(WAV_Snake_Hiss_1, WAV_Snake_Hiss_2, AUDIO_GAIN_UI * 0.42, 0.95, 1.05);
     } else {
       target_base_id.tower_instance_id = instance_create_layer(target_base_id.x, target_base_id.y, "Instances", tower_object, {
-        base_owner_id : target_base_id.id
+        base_owner_id : target_base_id.id,
+        tower_placement_hp_cost : placement_hp_cost
       });
       target_base_id.occupied = true;
       global.selected_tower_id = target_base_id.tower_instance_id;
       global.build_mode = false;
       global.build_base_id = noone;
+      global.build_click_lock = false;
       audio_play_variation(WAV_Small_Spark_1, WAV_Small_Spark_2, AUDIO_GAIN_UI, 0.97, 1.06);
     }
   }

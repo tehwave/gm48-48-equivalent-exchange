@@ -13,6 +13,7 @@ if (occupied) {
 
 global.build_mode = true;
 global.build_base_id = id;
+global.build_click_lock = true;
 global.selected_tower_id = noone;
 global.confirm_action = "";
 global.confirm_timer_steps = 0;

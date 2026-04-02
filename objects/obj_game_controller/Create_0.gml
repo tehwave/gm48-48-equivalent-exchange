@@ -17,6 +17,7 @@ global.confirm_action = "";
 global.confirm_timer_steps = 0;
 global.build_mode = false;
 global.build_base_id = noone;
+global.build_click_lock = false;
 global.debug_mode = false;
 global.ambient_sound_instance = -1;
 global.enemy_call_sfx_cooldown_steps_total = max(1, round(room_speed * AUDIO_ENEMY_CALL_COOLDOWN_SECONDS));

@@ -43,8 +43,15 @@ var top_right_y = 16;
 
 scr_draw_rounded_panel(top_right_x, top_right_y, top_right_width, top_right_height, 0.58, 14);
 
-draw_set_colour(c_red);
-draw_text(top_right_x + 14, top_right_y + 10, "Life: " + string(global.player_hp));
+/// @type {Real}
+var life_text_x = top_right_x + 14;
+/// @type {Real}
+var life_text_y = top_right_y + 10;
+
+draw_set_colour(c_black);
+draw_text(life_text_x + 1, life_text_y + 1, "Life: " + string(global.player_hp));
+draw_set_colour(make_color_rgb(255, 134, 198));
+draw_text(life_text_x, life_text_y, "Life: " + string(global.player_hp));
 draw_set_colour(c_yellow);
 draw_text(top_right_x + 14, top_right_y + 42, "Coins: " + string(global.player_coins));
 
@@ -67,9 +74,9 @@ if (global.build_mode && instance_exists(global.build_base_id)) {
   var base_gui_y = global.build_base_id.y - view_y;
 
   /// @type {Real}
-  var build_panel_width = 420;
+  var build_panel_width = 460;
   /// @type {Real}
-  var build_panel_height = 260;
+  var build_panel_height = 456;
   /// @type {Real}
   var build_panel_x = clamp(base_gui_x + 22, 10, gui_width - build_panel_width - 10);
   /// @type {Real}
@@ -80,7 +87,38 @@ if (global.build_mode && instance_exists(global.build_base_id)) {
   draw_set_colour(c_white);
   draw_text(build_panel_x + 12, build_panel_y + 10, "Build Tower");
   draw_set_colour(c_ltgray);
-  draw_text(build_panel_x + 12, build_panel_y + 34, "Select: Q/E or 1-5");
+  draw_text(build_panel_x + 12, build_panel_y + 34, "Select: [Q]/[E] or [1]-[5]");
+
+  /// @type {Asset.GMObject|Real}
+  var selected_build_object = scr_get_selected_tower_object();
+  /// @type {Asset.GMSprite|Real}
+  var selected_build_sprite = (selected_build_object != noone) ? object_get_sprite(selected_build_object) : -1;
+  if (selected_build_sprite != -1) {
+    /// @type {Real}
+    var preview_x = build_panel_x + build_panel_width - 48;
+    /// @type {Real}
+    var preview_y = build_panel_y + 38;
+    /// @type {Real}
+    var preview_scale = 0.85 + (0.04 * sin(current_time * 0.008));
+
+    draw_set_colour(c_black);
+    draw_set_alpha(0.7);
+    draw_rectangle(preview_x - 26, preview_y - 26, preview_x + 26, preview_y + 26, false);
+    draw_set_colour(c_yellow);
+    draw_set_alpha(0.9);
+    draw_rectangle(preview_x - 26, preview_y - 26, preview_x + 26, preview_y + 26, true);
+    draw_set_alpha(1);
+    draw_sprite_ext(selected_build_sprite, 0, preview_x, preview_y, preview_scale, preview_scale, 0, c_white, 1);
+  }
+
+  /// @type {Real}
+  var build_controls_block_height = 104;
+  /// @type {Real}
+  var build_rows_start_y = build_panel_y + 98;
+  /// @type {Real}
+  var build_row_pitch = 52;
+  /// @type {Real}
+  var build_row_detail_offset = 24;
 
   for (var tower_index = 0; tower_index < 5; tower_index += 1) {
     /// @type {Struct}
@@ -88,25 +126,36 @@ if (global.build_mode && instance_exists(global.build_base_id)) {
     /// @type {Bool}
     var tower_selected = global.selected_tower_type == tower_index;
     /// @type {Real}
-    var row_y = build_panel_y + 62 + (tower_index * 36);
+    var row_y = build_rows_start_y + (tower_index * build_row_pitch);
 
     if (tower_selected) {
-      scr_draw_rounded_panel(build_panel_x + 8, row_y - 4, build_panel_width - 16, 32, 0.38, 8);
+      scr_draw_rounded_panel(build_panel_x + 8, row_y - 7, build_panel_width - 16, 46, 0.38, 8);
     }
 
     draw_set_colour(tower_selected ? c_yellow : c_white);
     draw_text(
       build_panel_x + 14,
       row_y,
-      "[" + string(tower_index + 1) + "] " + tower_description.name + "  |  " + tower_description.damage_type + "  |  " + string(tower_description.hp_cost) + " Life"
+      "[" + string(tower_index + 1) + "] " + tower_description.name + "  |  " + tower_description.damage_type + "  |  Range " + string(tower_description.range) + "  |  " + string(tower_description.hp_cost) + " Life"
     );
 
     draw_set_colour(c_ltgray);
-    draw_text(build_panel_x + 24, row_y + 16, tower_description.special);
+    draw_text(build_panel_x + 24, row_y + build_row_detail_offset, tower_description.special);
   }
 
+  draw_set_alpha(0.45);
+  draw_set_colour(c_dkgray);
+  draw_line(
+    build_panel_x + 10,
+    build_panel_y + build_panel_height - build_controls_block_height + 6,
+    build_panel_x + build_panel_width - 10,
+    build_panel_y + build_panel_height - build_controls_block_height + 6
+  );
+  draw_set_alpha(1);
+
   draw_set_colour(c_aqua);
-  draw_text(build_panel_x + 12, build_panel_y + build_panel_height - 28, "Click base or Enter to build  |  RMB / Esc cancel");
+  draw_text(build_panel_x + 12, build_panel_y + build_panel_height - 72, "Build selected base: [B] or [Enter]");
+  draw_text(build_panel_x + 12, build_panel_y + build_panel_height - 42, "Click base to change selection  |  [RMB] / [Esc] cancel");
 }
 
 if (!global.build_mode && instance_exists(global.selected_tower_id)) {
@@ -172,6 +221,11 @@ if (!global.build_mode && instance_exists(global.selected_tower_id)) {
     selected_panel_y + 52,
     "Kills: " + string(global.selected_tower_id.tower_kill_count)
   );
+  draw_text(
+    selected_panel_x + 12,
+    selected_panel_y + 68,
+    "Range: " + string(round(global.selected_tower_id.tower_range))
+  );
 
   /// @type {Real}
   var selected_next_level = global.selected_tower_id.tower_level + 1;
@@ -184,18 +238,20 @@ if (!global.build_mode && instance_exists(global.selected_tower_id)) {
   }
 
   draw_set_colour(c_aqua);
-  draw_text(selected_panel_x + 12, selected_panel_y + 84, selected_upgrade_text);
+  draw_text(selected_panel_x + 12, selected_panel_y + 92, selected_upgrade_text);
   draw_set_colour(c_orange);
-  draw_text(selected_panel_x + 12, selected_panel_y + 112, "[X] Delete: +" + string(TOWER_PLACEMENT_HP_COST) + " Life");
+  /// @type {Real}
+  var selected_delete_refund_hp = variable_instance_exists(global.selected_tower_id, "tower_placement_hp_cost") ? global.selected_tower_id.tower_placement_hp_cost : TOWER_PLACEMENT_HP_COST;
+  draw_text(selected_panel_x + 12, selected_panel_y + 120, "[X] Delete: +" + string(selected_delete_refund_hp) + " Life");
 
   if (global.confirm_action != "") {
     /// @type {Real}
     var confirm_flash = (sin(current_time * 0.02) + 1) * 0.5;
     draw_set_colour(merge_colour(c_yellow, c_red, confirm_flash));
     if (global.confirm_action == "upgrade") {
-      draw_text(selected_panel_x + 12, selected_panel_y + 145, "CONFIRM? Press U again");
+      draw_text(selected_panel_x + 12, selected_panel_y + 153, "CONFIRM? Press [U] again");
     } else if (global.confirm_action == "delete") {
-      draw_text(selected_panel_x + 12, selected_panel_y + 145, "CONFIRM? Press X again");
+      draw_text(selected_panel_x + 12, selected_panel_y + 153, "CONFIRM? Press [X] again");
     }
   }
 }
@@ -230,10 +286,10 @@ if (global.game_state == GAME_STATE_INTRO) {
   /// @type {Real}
   var intro_seconds_remaining = ceil(global.intro_lock_timer_steps / room_speed);
   /// @type {String}
-  var continue_prompt = "Press SPACE to begin";
+  var continue_prompt = "Press [Space] to begin";
 
   if (global.intro_lock_timer_steps > 0) {
-    continue_prompt = "Press SPACE in " + string(intro_seconds_remaining) + "s";
+    continue_prompt = "Press [Space] in " + string(intro_seconds_remaining) + "s";
   }
 
   scr_draw_rounded_panel(0, 0, intro_gui_width, intro_gui_height, 0.72, 0);
@@ -258,7 +314,7 @@ if (global.game_state == GAME_STATE_INTRO) {
   draw_text(
     intro_center_x,
     intro_center_y + 48,
-    "Leaks also cost Life.\nKills grant Coins for upgrades (U).\nDelete selected tower with X for Life only (no coins)."
+    "Leaks also cost Life.\nKills grant Coins for upgrades ([U]).\nDelete selected tower with [X] for Life only (no coins)."
   );
 
   draw_set_colour(c_white);
@@ -310,7 +366,7 @@ if (global.game_state == GAME_STATE_GAME_OVER) {
   );
 
   draw_set_colour(c_yellow);
-  draw_text(end_center_x, end_center_y + 126, "Press R to restart");
+  draw_text(end_center_x, end_center_y + 126, "Press [R] to restart");
 }
 
 if (global.game_state == GAME_STATE_VICTORY) {
@@ -358,7 +414,7 @@ if (global.game_state == GAME_STATE_VICTORY) {
   );
 
   draw_set_colour(c_yellow);
-  draw_text(victory_center_x, victory_center_y + 126, "Press R to restart");
+  draw_text(victory_center_x, victory_center_y + 126, "Press [R] to restart");
 }
 
 draw_set_colour(c_white);
