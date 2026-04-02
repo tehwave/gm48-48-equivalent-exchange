@@ -29,6 +29,14 @@ if (enemy_freeze_timer_steps > 0) {
   enemy_freeze_timer_steps -= 1;
 }
 
+if (enemy_hit_flash_steps_remaining > 0) {
+  enemy_hit_flash_steps_remaining -= 1;
+}
+
+if (enemy_hit_audio_cooldown_steps_remaining > 0) {
+  enemy_hit_audio_cooldown_steps_remaining -= 1;
+}
+
 if (enemy_burn_timer_steps > 0) {
   enemy_burn_timer_steps -= 1;
   enemy_burn_tick_steps_remaining -= 1;
@@ -64,7 +72,7 @@ if (!has_leaked && path_position >= 1) {
   has_leaked = true;
   audio_play_one_shot(WAV_Hoof_sounds_on_grass, AUDIO_GAIN_COMBAT, 0.96, 1.04);
   global.enemies_alive = max(0, global.enemies_alive - 1);
-  game_register_leak(enemy_leak_damage);
+  game_register_leak(enemy_leak_damage, x, y);
   instance_destroy();
   exit;
 }
@@ -78,7 +86,7 @@ if (!is_dead && enemy_hp <= 0) {
     enemy_last_damage_source.tower_kill_count += 1;
   }
   if (object_index == obj_enemy_boss) {
-    global.player_hp += BOSS_KILL_HP_REWARD;
+    game_add_hp(BOSS_KILL_HP_REWARD, x, y);
   }
   enemy_death_vfx_timer = enemy_death_vfx_total_steps;
 }

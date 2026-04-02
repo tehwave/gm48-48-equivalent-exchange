@@ -62,6 +62,113 @@ function draw_text_shadow_ext(x, y, text, sep, width, shadow_offset_x, shadow_of
   draw_text_ext(x, y, text, sep, width);
 }
 
+/// @description Returns HUD-space anchor coordinates for value popups.
+/// @param {Real} category
+/// @returns {Struct}
+function game_get_value_fx_hud_anchor(category) {
+  /// @type {Real}
+  var gui_width = display_get_gui_width();
+  /// @type {Real}
+  var top_right_width = 224;
+  /// @type {Real}
+  var top_right_x = gui_width - top_right_width - 16;
+  /// @type {Real}
+  var top_right_y = 16;
+  /// @type {Real}
+  var anchor_x = top_right_x + 14;
+  /// @type {Real}
+  var anchor_y = top_right_y + 10;
+
+  if (category == VALUE_FX_CATEGORY_COIN_GAIN || category == VALUE_FX_CATEGORY_COIN_SPEND) {
+    anchor_y = top_right_y + 42;
+  }
+
+  return {
+    x : anchor_x,
+    y : anchor_y
+  };
+}
+
+/// @description Resolves default lifetime for a value popup category.
+/// @param {Real} category
+/// @returns {Real}
+function game_value_fx_default_life_steps(category) {
+  switch (category) {
+    case VALUE_FX_CATEGORY_COIN_GAIN: return VALUE_FX_COIN_GAIN_LIFE_STEPS;
+    case VALUE_FX_CATEGORY_COIN_SPEND: return VALUE_FX_COIN_SPEND_LIFE_STEPS;
+    case VALUE_FX_CATEGORY_HP_GAIN: return VALUE_FX_HP_GAIN_LIFE_STEPS;
+    case VALUE_FX_CATEGORY_HP_LOSS: return VALUE_FX_HP_LOSS_LIFE_STEPS;
+    case VALUE_FX_CATEGORY_DAMAGE: return VALUE_FX_DAMAGE_LIFE_STEPS;
+  }
+
+  return VALUE_FX_DAMAGE_LIFE_STEPS;
+}
+
+/// @description Formats a numeric amount for readable popup text.
+/// @param {Real} amount
+/// @returns {String}
+function game_value_fx_format_amount(amount) {
+  /// @type {Real}
+  var rounded_amount = round(amount);
+  if (abs(amount - rounded_amount) < 0.01) {
+    return string(rounded_amount);
+  }
+
+  return string_format(amount, 1, 1);
+}
+
+/// @description Enqueues a generic floating value popup.
+/// @param {String} value_text
+/// @param {Real} category
+/// @param {Real} anchor_mode
+/// @param {Real} anchor_x
+/// @param {Real} anchor_y
+/// @param {Real} lifetime_steps
+/// @param {Real} x_spread
+/// @returns {Void}
+function game_enqueue_value_fx(value_text, category, anchor_mode, anchor_x, anchor_y, lifetime_steps, x_spread) {
+  if (!variable_global_exists("value_fx_popups")) {
+    /// @type {Array<Struct>}
+    global.value_fx_popups = [];
+  }
+
+  if (string_length(value_text) <= 0) return;
+
+  /// @type {Real}
+  var popup_life_steps = (argument_count >= 6) ? max(1, round(lifetime_steps)) : game_value_fx_default_life_steps(category);
+  /// @type {Real}
+  var popup_x_spread = (argument_count >= 7) ? max(0, x_spread) : 0;
+
+  /// @type {Struct}
+  var value_popup = {
+    value_text : value_text,
+    category : category,
+    anchor_mode : anchor_mode,
+    anchor_x : anchor_x,
+    anchor_y : anchor_y,
+    offset_x : (popup_x_spread > 0) ? random_range(-popup_x_spread, popup_x_spread) : 0,
+    life : popup_life_steps,
+    max_life : popup_life_steps
+  };
+
+  array_push(global.value_fx_popups, value_popup);
+
+  /// @type {Real}
+  var popup_count = array_length(global.value_fx_popups);
+  if (popup_count > VALUE_FX_MAX_ACTIVE) {
+    /// @type {Array<Struct>}
+    var trimmed_popups = [];
+    /// @type {Real}
+    var trim_start = popup_count - VALUE_FX_MAX_ACTIVE;
+
+    for (var trim_index = trim_start; trim_index < popup_count; trim_index += 1) {
+      array_push(trimmed_popups, global.value_fx_popups[trim_index]);
+    }
+
+    global.value_fx_popups = trimmed_popups;
+  }
+}
+
 /// @param {Real} tower_type_index
 /// @returns {Struct}
 function scr_get_tower_description(tower_type_index) {
@@ -116,13 +223,25 @@ function scr_get_tower_description(tower_type_index) {
 }
 
 /// @param {Real} amount
+/// @param {Real} source_x
+/// @param {Real} source_y
 /// @returns {Bool}
-function game_try_spend_hp(amount) {
+function game_try_spend_hp(amount, source_x, source_y) {
   if (!game_is_running()) return false;
   if (amount <= 0) return true;
   if (global.player_hp < amount) return false;
 
   global.player_hp -= amount;
+  /// @type {String}
+  var hp_loss_text = "-" + game_value_fx_format_amount(amount);
+  if (argument_count >= 3) {
+    game_enqueue_value_fx(hp_loss_text, VALUE_FX_CATEGORY_HP_LOSS, VALUE_FX_ANCHOR_WORLD, source_x, source_y, VALUE_FX_HP_LOSS_LIFE_STEPS, 8);
+  } else {
+    /// @type {Struct}
+    var hp_hud_anchor = game_get_value_fx_hud_anchor(VALUE_FX_CATEGORY_HP_LOSS);
+    game_enqueue_value_fx(hp_loss_text, VALUE_FX_CATEGORY_HP_LOSS, VALUE_FX_ANCHOR_GUI, hp_hud_anchor.x, hp_hud_anchor.y, VALUE_FX_HP_LOSS_LIFE_STEPS, 5);
+  }
+
   game_audio_play_life_lost(amount);
   if (global.player_hp <= 0) {
     global.player_hp = 0;
@@ -143,47 +262,128 @@ function game_try_spend_coins(amount, source_x, source_y) {
 
   global.player_coins -= amount;
 
-  if (!variable_global_exists("coin_spend_vfx_emitters")) {
-    /// @type {Array<Struct>}
-    global.coin_spend_vfx_emitters = [];
-  }
+  /// @type {Bool}
+  var has_world_source = argument_count >= 3;
+  /// @type {Real}
+  var spend_source_x = has_world_source ? source_x : 0;
+  /// @type {Real}
+  var spend_source_y = has_world_source ? source_y : 0;
 
-  /// @type {Real}
-  var spend_vfx_budget = clamp(round(amount), 1, 36);
-  /// @type {Real}
-  var emit_span_steps = max(1, round(room_speed * COIN_SPEND_UI_EMIT_SPAN_SECONDS));
-  /// @type {Real}
-  var emit_interval_steps = max(1, floor(emit_span_steps / max(1, spend_vfx_budget)));
-
-  /// @type {Real}
-  var spend_source_x = argument_count >= 2 ? source_x : 0;
-  /// @type {Real}
-  var spend_source_y = argument_count >= 3 ? source_y : 0;
-
-  if (argument_count < 3 && instance_exists(global.selected_tower_id)) {
+  if (!has_world_source && instance_exists(global.selected_tower_id)) {
     spend_source_x = global.selected_tower_id.x;
     spend_source_y = global.selected_tower_id.y;
+    has_world_source = true;
   }
 
-  /// @type {Struct}
-  var spend_emitter = {
-    world_x : spend_source_x,
-    world_y : spend_source_y - 10,
-    pending : spend_vfx_budget,
-    emit_steps_remaining : emit_span_steps,
-    emit_interval_steps : emit_interval_steps,
-    emit_tick : 0
-  };
+  /// @type {String}
+  var spend_text = "-" + game_value_fx_format_amount(amount);
+  if (has_world_source) {
+    game_enqueue_value_fx(spend_text, VALUE_FX_CATEGORY_COIN_SPEND, VALUE_FX_ANCHOR_WORLD, spend_source_x, spend_source_y, VALUE_FX_COIN_SPEND_LIFE_STEPS, 10);
+  } else {
+    /// @type {Struct}
+    var spend_hud_anchor = game_get_value_fx_hud_anchor(VALUE_FX_CATEGORY_COIN_SPEND);
+    game_enqueue_value_fx(spend_text, VALUE_FX_CATEGORY_COIN_SPEND, VALUE_FX_ANCHOR_GUI, spend_hud_anchor.x, spend_hud_anchor.y, VALUE_FX_COIN_SPEND_LIFE_STEPS, 7);
+  }
 
-  array_push(global.coin_spend_vfx_emitters, spend_emitter);
+  if (!variable_global_exists("coin_spend_vfx_bursts")) {
+    /// @type {Array<Struct>}
+    global.coin_spend_vfx_bursts = [];
+  }
+
+  /// @type {Real}
+  var spend_vfx_budget = clamp(round(amount * 1.2), 3, 26);
+
+  if (has_world_source) {
+    /// @type {Struct}
+    var spend_burst = {
+      world_x : spend_source_x,
+      world_y : spend_source_y - 10,
+      particle_count : spend_vfx_budget
+    };
+
+    array_push(global.coin_spend_vfx_bursts, spend_burst);
+  }
 
   return true;
 }
 
-/// @param {Real} amount
+/// @description Triggers a short shake on a tower for failed upgrade feedback.
+/// @param {Id.Instance|Real} tower_id
 /// @returns {Void}
-function game_add_coins(amount) {
+function game_trigger_tower_upgrade_fail_feedback(tower_id) {
+  if (!instance_exists(tower_id)) return;
+
+  with (tower_id) {
+    if (!variable_instance_exists(id, "tower_failed_upgrade_shake_steps_total")) exit;
+    tower_failed_upgrade_shake_steps_remaining = tower_failed_upgrade_shake_steps_total;
+    tower_failed_upgrade_shake_dir = choose(-1, 1);
+  }
+}
+
+/// @param {Real} amount
+/// @param {Real} source_x
+/// @param {Real} source_y
+/// @returns {Void}
+function game_add_coins(amount, source_x, source_y) {
+  if (amount == 0) return;
+
+  /// @type {Real}
+  var coins_before = global.player_coins;
   global.player_coins = max(0, global.player_coins + amount);
+
+  /// @type {Real}
+  var coin_delta = global.player_coins - coins_before;
+  if (coin_delta == 0) return;
+
+  if (coin_delta > 0) {
+    if (!variable_global_exists("coin_hud_pop_steps")) {
+      global.coin_hud_pop_steps = 0;
+    }
+
+    global.coin_hud_pop_steps = max(global.coin_hud_pop_steps, 10);
+  }
+
+  /// @type {Real}
+  var coin_fx_category = (coin_delta > 0) ? VALUE_FX_CATEGORY_COIN_GAIN : VALUE_FX_CATEGORY_COIN_SPEND;
+  /// @type {String}
+  var coin_delta_text = ((coin_delta > 0) ? "+" : "-") + game_value_fx_format_amount(abs(coin_delta));
+
+  if (argument_count >= 3) {
+    game_enqueue_value_fx(coin_delta_text, coin_fx_category, VALUE_FX_ANCHOR_WORLD, source_x, source_y, game_value_fx_default_life_steps(coin_fx_category), 14);
+  } else {
+    /// @type {Struct}
+    var coin_hud_anchor = game_get_value_fx_hud_anchor(coin_fx_category);
+    game_enqueue_value_fx(coin_delta_text, coin_fx_category, VALUE_FX_ANCHOR_GUI, coin_hud_anchor.x, coin_hud_anchor.y, game_value_fx_default_life_steps(coin_fx_category), 7);
+  }
+}
+
+/// @param {Real} amount
+/// @param {Real} source_x
+/// @param {Real} source_y
+/// @returns {Real}
+function game_add_hp(amount, source_x, source_y) {
+  if (!game_is_running()) return 0;
+  if (amount <= 0) return 0;
+
+  /// @type {Real}
+  var hp_before = global.player_hp;
+  global.player_hp += amount;
+
+  /// @type {Real}
+  var hp_gained = global.player_hp - hp_before;
+  if (hp_gained <= 0) return 0;
+
+  /// @type {String}
+  var hp_gain_text = "+" + game_value_fx_format_amount(hp_gained);
+  if (argument_count >= 3) {
+    game_enqueue_value_fx(hp_gain_text, VALUE_FX_CATEGORY_HP_GAIN, VALUE_FX_ANCHOR_WORLD, source_x, source_y, VALUE_FX_HP_GAIN_LIFE_STEPS, 8);
+  } else {
+    /// @type {Struct}
+    var hp_hud_anchor = game_get_value_fx_hud_anchor(VALUE_FX_CATEGORY_HP_GAIN);
+    game_enqueue_value_fx(hp_gain_text, VALUE_FX_CATEGORY_HP_GAIN, VALUE_FX_ANCHOR_GUI, hp_hud_anchor.x, hp_hud_anchor.y, VALUE_FX_HP_GAIN_LIFE_STEPS, 5);
+  }
+
+  return hp_gained;
 }
 
 /// @description Deletes the selected tower and refunds life spent on placement.
@@ -210,7 +410,7 @@ function game_delete_selected_tower_refund_life() {
 
   /// @type {Real}
   var placement_refund_hp = variable_instance_exists(selected_tower_id, "tower_placement_hp_cost") ? selected_tower_id.tower_placement_hp_cost : TOWER_PLACEMENT_HP_COST;
-  global.player_hp += placement_refund_hp;
+  game_add_hp(placement_refund_hp, selected_tower_id.x, selected_tower_id.y);
   if (instance_exists(base_owner_id)) {
     with (base_owner_id) {
       occupied = false;
@@ -244,20 +444,63 @@ function game_spawn_coin_drop(spawn_x, spawn_y, coin_value) {
 }
 
 /// @param {Real} leak_damage
+/// @param {Real} source_x
+/// @param {Real} source_y
 /// @returns {Void}
-function game_register_leak(leak_damage) {
+function game_register_leak(leak_damage, source_x, source_y) {
   if (!game_is_running()) return;
   if (leak_damage <= 0) return;
 
   /// @type {Real}
   var hp_before = global.player_hp;
   global.player_hp = max(0, global.player_hp - leak_damage);
-  if (global.player_hp < hp_before) {
-    game_audio_play_life_lost(hp_before - global.player_hp);
+  /// @type {Real}
+  var hp_lost = hp_before - global.player_hp;
+  if (hp_lost > 0) {
+    game_audio_play_life_lost(hp_lost);
+
+    /// @type {String}
+    var hp_loss_text = "-" + game_value_fx_format_amount(hp_lost);
+    if (argument_count >= 3) {
+      game_enqueue_value_fx(hp_loss_text, VALUE_FX_CATEGORY_HP_LOSS, VALUE_FX_ANCHOR_WORLD, source_x, source_y, VALUE_FX_HP_LOSS_LIFE_STEPS, 8);
+    } else {
+      /// @type {Struct}
+      var hp_hud_anchor = game_get_value_fx_hud_anchor(VALUE_FX_CATEGORY_HP_LOSS);
+      game_enqueue_value_fx(hp_loss_text, VALUE_FX_CATEGORY_HP_LOSS, VALUE_FX_ANCHOR_GUI, hp_hud_anchor.x, hp_hud_anchor.y, VALUE_FX_HP_LOSS_LIFE_STEPS, 5);
+    }
   }
 
   if (global.player_hp <= 0) {
     global.game_state = GAME_STATE_GAME_OVER;
+  }
+}
+
+/// @param {Id.Instance} enemy_instance
+/// @param {Real} damage
+/// @param {Id.Instance|Real} source_tower_id
+/// @returns {Bool}
+function enemy_register_hit_feedback(enemy_instance, damage) {
+  if (!instance_exists(enemy_instance)) return;
+
+  with (enemy_instance) {
+    if (is_dead || has_leaked) return;
+
+    enemy_hit_flash_steps_remaining = max(enemy_hit_flash_steps_remaining, enemy_hit_flash_steps_total);
+
+    if (enemy_hit_audio_cooldown_steps_remaining <= 0) {
+      /// @type {Real}
+      var damage_gain_scale = clamp(0.85 + (damage * 0.03), 0.85, 1.15);
+
+      audio_play_variation(
+        WAV_Small_Spark_1,
+        WAV_Small_Spark_2,
+        (AUDIO_GAIN_COMBAT * ENEMY_HIT_AUDIO_GAIN_SCALE) * damage_gain_scale,
+        ENEMY_HIT_AUDIO_PITCH_MIN,
+        ENEMY_HIT_AUDIO_PITCH_MAX
+      );
+
+      enemy_hit_audio_cooldown_steps_remaining = enemy_hit_audio_cooldown_steps_total;
+    }
   }
 }
 
@@ -281,18 +524,15 @@ function enemy_take_damage(enemy_instance, damage, source_tower_id) {
     source_is_valid = (source_object == obj_tower_parent || object_is_ancestor(source_object, obj_tower_parent));
   }
 
-  /// @type {Bool}
-  var source_is_valid_local = source_is_valid;
-  /// @type {Id.Instance|Real}
-  var source_tower_id_local = source_tower_id;
+  if (enemy_instance.is_dead || enemy_instance.has_leaked) return false;
 
-  with (enemy_instance) {
-    if (is_dead || has_leaked) return false;
-    enemy_hp -= damage;
-    if (source_is_valid_local) {
-      enemy_last_damage_source = source_tower_id_local;
-    }
+  enemy_instance.enemy_hp -= damage;
+  if (source_is_valid) {
+    enemy_instance.enemy_last_damage_source = source_tower_id;
   }
+
+  enemy_register_hit_feedback(enemy_instance, damage);
+  game_enqueue_value_fx(game_value_fx_format_amount(damage), VALUE_FX_CATEGORY_DAMAGE, VALUE_FX_ANCHOR_WORLD, enemy_instance.x, enemy_instance.y, VALUE_FX_DAMAGE_LIFE_STEPS, 12);
 
   return true;
 }

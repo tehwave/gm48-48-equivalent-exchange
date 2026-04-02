@@ -1,14 +1,20 @@
 /// @description Upgrade hook (User Event 0): spends coins and reapplies level stats.
 
 if (!game_is_running()) exit;
-if (tower_level >= TOWER_MAX_LEVEL) exit;
+if (tower_level >= TOWER_MAX_LEVEL) {
+  game_trigger_tower_upgrade_fail_feedback(id);
+  exit;
+}
 
 /// @type {Real}
 var target_level = tower_level + 1;
 /// @type {Real}
 var upgrade_cost = scr_tower_upgrade_cost(object_index, target_level);
 
-if (!game_try_spend_coins(upgrade_cost, x, y)) exit;
+if (!game_try_spend_coins(upgrade_cost, x, y)) {
+  game_trigger_tower_upgrade_fail_feedback(id);
+  exit;
+}
 
 tower_level = target_level;
 scr_tower_apply_level_stats(id, object_index, tower_level);

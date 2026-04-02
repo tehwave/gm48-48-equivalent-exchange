@@ -57,14 +57,19 @@ if (!variable_global_exists("coin_hud_pop_steps")) {
   global.coin_hud_pop_steps = 0;
 }
 
+if (!variable_global_exists("value_fx_popups")) {
+  /// @type {Array<Struct>}
+  global.value_fx_popups = [];
+}
+
 if (!variable_global_exists("coin_spend_particles")) {
   /// @type {Array<Struct>}
   global.coin_spend_particles = [];
 }
 
-if (!variable_global_exists("coin_spend_vfx_emitters")) {
+if (!variable_global_exists("coin_spend_vfx_bursts")) {
   /// @type {Array<Struct>}
-  global.coin_spend_vfx_emitters = [];
+  global.coin_spend_vfx_bursts = [];
 }
 
 /// @type {Real}
@@ -93,42 +98,141 @@ if (global.coin_hud_pop_steps > 0) {
   global.coin_hud_pop_steps -= 1;
 }
 
+/// Draw all floating value effects through one generic world/gui renderer.
 /// @type {Array<Struct>}
-var active_spend_emitters = [];
+var active_value_fx_popups = [];
 /// @type {Real}
-var spend_emitter_count = array_length(global.coin_spend_vfx_emitters);
-for (var emitter_index = 0; emitter_index < spend_emitter_count; emitter_index += 1) {
+var value_fx_popup_count = array_length(global.value_fx_popups);
+/// @type {Real}
+var value_fx_camera_id = view_camera[0];
+/// @type {Real}
+var value_fx_view_x = (value_fx_camera_id != -1) ? camera_get_view_x(value_fx_camera_id) : 0;
+/// @type {Real}
+var value_fx_view_y = (value_fx_camera_id != -1) ? camera_get_view_y(value_fx_camera_id) : 0;
+/// @type {Real}
+var value_fx_view_w = (value_fx_camera_id != -1) ? camera_get_view_width(value_fx_camera_id) : room_width;
+/// @type {Real}
+var value_fx_view_h = (value_fx_camera_id != -1) ? camera_get_view_height(value_fx_camera_id) : room_height;
+/// @type {Real}
+var value_fx_safe_view_w = max(1, value_fx_view_w);
+/// @type {Real}
+var value_fx_safe_view_h = max(1, value_fx_view_h);
+/// @type {Real}
+var value_fx_safe_gui_w = max(1, gui_width);
+/// @type {Real}
+var value_fx_safe_gui_h = max(1, gui_height);
+
+draw_set_halign(fa_center);
+draw_set_valign(fa_middle);
+for (var value_fx_index = 0; value_fx_index < value_fx_popup_count; value_fx_index += 1) {
   /// @type {Struct}
-  var spend_emitter_state = global.coin_spend_vfx_emitters[emitter_index];
+  var value_fx = global.value_fx_popups[value_fx_index];
+  value_fx.life -= 1;
 
-  if (spend_emitter_state.emit_steps_remaining > 0) {
-    spend_emitter_state.emit_steps_remaining -= 1;
-  }
+  if (value_fx.life > 0) {
+    /// @type {Real}
+    var value_fx_t = 1 - (value_fx.life / max(1, value_fx.max_life));
+    /// @type {Real}
+    var value_fx_rise_distance = VALUE_FX_DAMAGE_RISE_DISTANCE;
+    /// @type {Real}
+    var value_fx_scale = VALUE_FX_DAMAGE_SCALE_START + (VALUE_FX_DAMAGE_SCALE_GROWTH * value_fx_t);
+    /// @type {Real}
+    var value_fx_main_colour = make_color_rgb(255, 200, 120);
 
-  if (spend_emitter_state.pending > 0) {
-    spend_emitter_state.emit_tick -= 1;
-    if (spend_emitter_state.emit_tick <= 0) {
-      /// @type {Struct}
-      var spend_particle = {
-        world_x : spend_emitter_state.world_x,
-        world_y : spend_emitter_state.world_y,
-        vy : random_range(COIN_SPEND_UI_PARTICLE_START_SPEED_MIN, COIN_SPEND_UI_PARTICLE_START_SPEED_MAX),
-        life : COIN_SPEND_UI_PARTICLE_LIFE_STEPS,
-        max_life : COIN_SPEND_UI_PARTICLE_LIFE_STEPS
-      };
-
-      array_push(global.coin_spend_particles, spend_particle);
-      spend_emitter_state.pending -= 1;
-      spend_emitter_state.emit_tick = max(1, spend_emitter_state.emit_interval_steps);
+    switch (value_fx.category) {
+      case VALUE_FX_CATEGORY_COIN_GAIN:
+        value_fx_rise_distance = VALUE_FX_COIN_GAIN_RISE_DISTANCE;
+        value_fx_scale = VALUE_FX_COIN_GAIN_SCALE_START + (VALUE_FX_COIN_GAIN_SCALE_GROWTH * value_fx_t);
+        value_fx_main_colour = c_yellow;
+        break;
+      case VALUE_FX_CATEGORY_COIN_SPEND:
+        value_fx_rise_distance = VALUE_FX_COIN_SPEND_RISE_DISTANCE;
+        value_fx_scale = VALUE_FX_COIN_SPEND_SCALE_START + (VALUE_FX_COIN_SPEND_SCALE_GROWTH * value_fx_t);
+        value_fx_main_colour = make_color_rgb(255, 178, 74);
+        break;
+      case VALUE_FX_CATEGORY_HP_GAIN:
+        value_fx_rise_distance = VALUE_FX_HP_GAIN_RISE_DISTANCE;
+        value_fx_scale = VALUE_FX_HP_GAIN_SCALE_START + (VALUE_FX_HP_GAIN_SCALE_GROWTH * value_fx_t);
+        value_fx_main_colour = make_color_rgb(130, 255, 162);
+        break;
+      case VALUE_FX_CATEGORY_HP_LOSS:
+        value_fx_rise_distance = VALUE_FX_HP_LOSS_RISE_DISTANCE;
+        value_fx_scale = VALUE_FX_HP_LOSS_SCALE_START + (VALUE_FX_HP_LOSS_SCALE_GROWTH * value_fx_t);
+        value_fx_main_colour = make_color_rgb(255, 134, 198);
+        break;
+      case VALUE_FX_CATEGORY_DAMAGE:
+        value_fx_rise_distance = VALUE_FX_DAMAGE_RISE_DISTANCE;
+        value_fx_scale = VALUE_FX_DAMAGE_SCALE_START + (VALUE_FX_DAMAGE_SCALE_GROWTH * value_fx_t);
+        value_fx_main_colour = make_color_rgb(255, 200, 120);
+        break;
     }
-  }
 
-  if (spend_emitter_state.pending > 0 || spend_emitter_state.emit_steps_remaining > 0) {
-    array_push(active_spend_emitters, spend_emitter_state);
+    /// @type {Real}
+    var value_fx_fade_t = clamp((value_fx_t - 0.88) / 0.12, 0, 1);
+    /// @type {Real}
+    var value_fx_alpha = 1 - value_fx_fade_t;
+    /// @type {Real}
+    var value_fx_base_x = value_fx.anchor_x + value_fx.offset_x;
+    /// @type {Real}
+    var value_fx_base_y = value_fx.anchor_y - VALUE_FX_BASE_WORLD_Y_OFFSET - (value_fx_rise_distance * value_fx_t);
+    /// @type {Real}
+    var value_fx_gui_x = value_fx_base_x;
+    /// @type {Real}
+    var value_fx_gui_y = value_fx_base_y;
+
+    if (value_fx.anchor_mode == VALUE_FX_ANCHOR_WORLD) {
+      value_fx_gui_x = ((value_fx_base_x - value_fx_view_x) / value_fx_safe_view_w) * value_fx_safe_gui_w;
+      value_fx_gui_y = ((value_fx_base_y - value_fx_view_y) / value_fx_safe_view_h) * value_fx_safe_gui_h;
+    }
+
+    draw_set_alpha(value_fx_alpha);
+    draw_set_colour(c_black);
+    draw_text_transformed(value_fx_gui_x + 2, value_fx_gui_y + 2, value_fx.value_text, value_fx_scale, value_fx_scale, 0);
+    draw_set_colour(value_fx_main_colour);
+    draw_text_transformed(value_fx_gui_x, value_fx_gui_y, value_fx.value_text, value_fx_scale, value_fx_scale, 0);
+
+    array_push(active_value_fx_popups, value_fx);
   }
 }
 
-global.coin_spend_vfx_emitters = active_spend_emitters;
+draw_set_alpha(1);
+draw_set_colour(c_white);
+draw_set_halign(fa_left);
+draw_set_valign(fa_top);
+global.value_fx_popups = active_value_fx_popups;
+
+/// Convert queued spend bursts into immediate exploding coin particles.
+/// @type {Real}
+var spend_burst_count = array_length(global.coin_spend_vfx_bursts);
+for (var burst_index = 0; burst_index < spend_burst_count; burst_index += 1) {
+  /// @type {Struct}
+  var spend_burst = global.coin_spend_vfx_bursts[burst_index];
+
+  for (var burst_particle_index = 0; burst_particle_index < spend_burst.particle_count; burst_particle_index += 1) {
+    /// @type {Real}
+    var burst_angle = random_range(0, 359);
+    /// @type {Real}
+    var burst_speed = random_range(COIN_SPEND_UI_PARTICLE_SPEED_MIN, COIN_SPEND_UI_PARTICLE_SPEED_MAX);
+    /// @type {Real}
+    var burst_life = irandom_range(COIN_SPEND_UI_PARTICLE_LIFE_MIN, COIN_SPEND_UI_PARTICLE_LIFE_MAX);
+
+    /// @type {Struct}
+    var spend_particle = {
+      world_x : spend_burst.world_x,
+      world_y : spend_burst.world_y,
+      vx : lengthdir_x(burst_speed, burst_angle),
+      vy : lengthdir_y(burst_speed, burst_angle),
+      life : burst_life,
+      max_life : burst_life,
+      angle : random_range(0, 359),
+      angle_speed : random_range(-COIN_SPEND_UI_PARTICLE_SPIN_MAX, COIN_SPEND_UI_PARTICLE_SPIN_MAX)
+    };
+
+    array_push(global.coin_spend_particles, spend_particle);
+  }
+}
+
+global.coin_spend_vfx_bursts = [];
 
 /// @type {Array<Struct>}
 var active_spend_particles = [];
@@ -160,13 +264,16 @@ for (var particle_index = 0; particle_index < spend_particle_count; particle_ind
   spend_particle_state.life -= 1;
 
   if (spend_particle_state.life > 0) {
+    spend_particle_state.vx *= COIN_SPEND_UI_PARTICLE_DRAG;
     spend_particle_state.vy += COIN_SPEND_UI_PARTICLE_GRAVITY;
+    spend_particle_state.world_x += spend_particle_state.vx;
     spend_particle_state.world_y += spend_particle_state.vy;
+    spend_particle_state.angle += spend_particle_state.angle_speed;
 
     /// @type {Real}
     var spend_life_t = spend_particle_state.life / max(1, spend_particle_state.max_life);
     /// @type {Real}
-    var spend_fade_t = clamp((spend_life_t - 0.2) / 0.8, 0, 1);
+    var spend_fade_t = clamp((spend_life_t - 0.05) / 0.95, 0, 1);
     /// @type {Real}
     var spend_alpha = spend_fade_t;
     /// @type {Real}
@@ -183,7 +290,7 @@ for (var particle_index = 0; particle_index < spend_particle_count; particle_ind
       spend_gui_y,
       COIN_SPEND_UI_PARTICLE_SCALE,
       COIN_SPEND_UI_PARTICLE_SCALE,
-      0,
+      spend_particle_state.angle,
       c_white,
       spend_alpha
     );

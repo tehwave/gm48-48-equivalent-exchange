@@ -9,7 +9,19 @@ var draw_angle = tower_directional_sprite_enabled ? 0 : image_angle;
 /// @type {Real}
 var draw_offset_y = 0;
 /// @type {Real}
+var draw_offset_x = 0;
+/// @type {Real}
 var tower_flash_overlay_alpha = 0;
+
+if (tower_failed_upgrade_shake_steps_remaining > 0) {
+  /// @type {Real}
+  var shake_progress = tower_failed_upgrade_shake_steps_remaining / tower_failed_upgrade_shake_steps_total;
+  /// @type {Real}
+  var shake_phase = (1 - shake_progress) * pi * 5;
+  /// @type {Real}
+  var shake_fade = power(shake_progress, 0.85);
+  draw_offset_x = sin(shake_phase) * tower_failed_upgrade_shake_strength * shake_fade * tower_failed_upgrade_shake_dir;
+}
 
 if (tower_spawn_anim_steps_remaining > 0) {
   /// @type {Real}
@@ -139,17 +151,17 @@ if (tower_attack_vfx_sprite != -1 && tower_attack_vfx_steps_remaining > 0) {
   /// @type {Real}
   var vfx_angle = tower_attack_vfx_angle + tower_attack_vfx_angle_offset;
   /// @type {Real}
-  var vfx_x = x + lengthdir_x(tower_attack_vfx_distance, vfx_angle);
+  var vfx_x = x + draw_offset_x + lengthdir_x(tower_attack_vfx_distance, vfx_angle);
   /// @type {Real}
   var vfx_y = y + draw_offset_y + lengthdir_y(tower_attack_vfx_distance, vfx_angle);
   draw_sprite_ext(tower_attack_vfx_sprite, frame_index, vfx_x, vfx_y, tower_attack_vfx_scale, tower_attack_vfx_scale, vfx_angle, c_white, 1);
 }
 
 if (sprite_index != -1) {
-  draw_sprite_ext(sprite_index, image_index, x, y + draw_offset_y, draw_scale_x, draw_scale_y, draw_angle, image_blend, image_alpha);
+  draw_sprite_ext(sprite_index, image_index, x + draw_offset_x, y + draw_offset_y, draw_scale_x, draw_scale_y, draw_angle, image_blend, image_alpha);
   if (tower_flash_overlay_alpha > 0) {
     gpu_set_blendmode(bm_add);
-    draw_sprite_ext(sprite_index, image_index, x, y + draw_offset_y, draw_scale_x, draw_scale_y, draw_angle, c_yellow, tower_flash_overlay_alpha);
+    draw_sprite_ext(sprite_index, image_index, x + draw_offset_x, y + draw_offset_y, draw_scale_x, draw_scale_y, draw_angle, c_yellow, tower_flash_overlay_alpha);
     gpu_set_blendmode(bm_normal);
   }
 }
@@ -171,20 +183,20 @@ if (tower_upgrade_shine_steps_remaining > 0) {
   gpu_set_blendmode(bm_add);
   draw_set_alpha(shine_alpha * 0.45);
   draw_set_colour(c_white);
-  draw_circle(x, y + draw_offset_y, shine_radius, false);
+  draw_circle(x + draw_offset_x, y + draw_offset_y, shine_radius, false);
 
   draw_set_alpha(shine_alpha * 0.75);
   draw_set_colour(c_yellow);
   draw_line(
-    x + lengthdir_x(shine_radius * 0.9, spin),
+    x + draw_offset_x + lengthdir_x(shine_radius * 0.9, spin),
     y + draw_offset_y + lengthdir_y(shine_radius * 0.9, spin),
-    x + lengthdir_x(shine_radius * 0.9, spin + 180),
+    x + draw_offset_x + lengthdir_x(shine_radius * 0.9, spin + 180),
     y + draw_offset_y + lengthdir_y(shine_radius * 0.9, spin + 180)
   );
   draw_line(
-    x + lengthdir_x(shine_radius * 0.65, spin + 90),
+    x + draw_offset_x + lengthdir_x(shine_radius * 0.65, spin + 90),
     y + draw_offset_y + lengthdir_y(shine_radius * 0.65, spin + 90),
-    x + lengthdir_x(shine_radius * 0.65, spin + 270),
+    x + draw_offset_x + lengthdir_x(shine_radius * 0.65, spin + 270),
     y + draw_offset_y + lengthdir_y(shine_radius * 0.65, spin + 270)
   );
 

@@ -48,6 +48,12 @@ if (sprite_index != -1) {
 	/// @type {Real}
 	var sprite_tint = has_slow_or_freeze ? make_colour_rgb(tint_r, tint_g, tint_b) : c_white;
 	/// @type {Real}
+	var hit_flash_mix = 0;
+	if (enemy_hit_flash_steps_remaining > 0) {
+		hit_flash_mix = ENEMY_HIT_FLASH_STRENGTH * (enemy_hit_flash_steps_remaining / max(1, enemy_hit_flash_steps_total));
+	}
+	sprite_tint = merge_colour(sprite_tint, c_white, clamp(hit_flash_mix, 0, 1));
+	/// @type {Real}
 	var boss_draw_scale = (object_index == obj_enemy_boss) ? 2 : 1;
 
 	// Draw with a per-instance visual offset while gameplay coordinates stay on-path.

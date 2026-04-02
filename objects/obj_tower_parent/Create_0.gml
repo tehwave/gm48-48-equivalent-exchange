@@ -86,6 +86,10 @@ tower_scale_current = tower_base_scale;
 
 tower_upgrade_shine_steps_total = max(1, round(room_speed * 0.42));
 tower_upgrade_shine_steps_remaining = 0;
+tower_failed_upgrade_shake_steps_total = max(3, round(room_speed * 0.28));
+tower_failed_upgrade_shake_steps_remaining = 0;
+tower_failed_upgrade_shake_strength = 6;
+tower_failed_upgrade_shake_dir = 1;
 
 image_xscale = tower_scale_current;
 image_yscale = tower_scale_current;

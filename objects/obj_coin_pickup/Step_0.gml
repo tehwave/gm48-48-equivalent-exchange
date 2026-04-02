@@ -72,7 +72,6 @@ if (coin_collected) {
 
   x = coin_collect_draw_x;
   y = coin_collect_draw_y;
-  image_angle += 14;
 
   if (coin_collect_vfx_steps <= 0) {
     instance_destroy();
@@ -117,5 +116,3 @@ if (coin_life_steps <= COIN_DROP_EXPIRE_FLASH_STEPS) {
   }
 }
 
-image_angle += coin_rotation_speed;
-coin_rotation_speed *= 0.96;

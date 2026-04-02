@@ -4,7 +4,7 @@ if (coin_collected) exit;
 if (!game_is_running()) exit;
 
 coin_collected = true;
-game_add_coins(coin_value);
+game_add_coins(coin_value, x, y);
 audio_play_variation(WAV_Magical_Sparkle_Charge_Up_1, WAV_Magical_Sparkle_Charge_Up_2, AUDIO_GAIN_UI * 1.15, 1.04, 1.12);
 audio_play_variation(WAV_Magical_Sparkle_Disappate_1, WAV_Magical_Sparkle_Disappate_2, AUDIO_GAIN_UI * 1.05, 1.08, 1.18);
 coin_collect_vfx_steps = coin_collect_vfx_total_steps;
@@ -40,11 +40,9 @@ var safe_gui_h = max(1, gui_height);
 coin_collect_start_gui_x = ((x - view_x) / safe_view_w) * safe_gui_w;
 coin_collect_start_gui_y = ((y - view_y) / safe_view_h) * safe_gui_h;
 
-/// Start with a quick outward burst in a random direction before homing.
-/// @type {Real}
-var launch_angle = random_range(0, 359);
-coin_collect_launch_dir_x = lengthdir_x(1, launch_angle);
-coin_collect_launch_dir_y = lengthdir_y(1, launch_angle);
+/// Start with a quick upward-only burst before homing to UI.
+coin_collect_launch_dir_x = 0;
+coin_collect_launch_dir_y = -1;
 coin_collect_launch_distance = random_range(28, 54);
 coin_collect_launch_phase_t = random_range(0.14, 0.24);
 

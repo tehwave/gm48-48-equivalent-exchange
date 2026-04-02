@@ -3,23 +3,40 @@
 /// @type {Real}
 var height_above_ground = max(0, coin_ground_y - y);
 /// @type {Real}
-var shadow_t = clamp(height_above_ground / 36, 0, 1);
+var shadow_t = clamp(height_above_ground / 92, 0, 1);
 /// @type {Real}
-var shadow_alpha = 0.28 - (0.14 * shadow_t);
+var shadow_alpha = lerp(0.54, 0.12, power(shadow_t, 1.08));
 /// @type {Real}
-var shadow_radius_x = 11 - (4 * shadow_t);
+var shadow_radius_x = lerp(13.5, 4.2, power(shadow_t, 0.78));
 /// @type {Real}
-var shadow_radius_y = 4 - (1.5 * shadow_t);
+var shadow_radius_y = lerp(5.2, 1.6, power(shadow_t, 0.74));
+/// @type {Real}
+var shadow_center_x = x + 2;
+/// @type {Real}
+var shadow_center_y = coin_ground_y + 4;
+/// @type {Real}
+var contact_shadow_t = 1 - shadow_t;
 
-draw_set_alpha(max(0.08, shadow_alpha));
+draw_set_alpha(max(0.09, shadow_alpha));
 draw_set_colour(c_black);
 draw_ellipse(
-  x - shadow_radius_x,
-  coin_ground_y + 2 - shadow_radius_y,
-  x + shadow_radius_x,
-  coin_ground_y + 2 + shadow_radius_y,
+  shadow_center_x - shadow_radius_x,
+  shadow_center_y - shadow_radius_y,
+  shadow_center_x + shadow_radius_x,
+  shadow_center_y + shadow_radius_y,
   false
 );
+
+// Contact core makes the coin feel grounded when it is near the floor.
+draw_set_alpha(0.22 * power(max(0, contact_shadow_t), 1.4));
+draw_ellipse(
+  shadow_center_x - (shadow_radius_x * 0.56),
+  shadow_center_y - (shadow_radius_y * 0.62),
+  shadow_center_x + (shadow_radius_x * 0.56),
+  shadow_center_y + (shadow_radius_y * 0.62),
+  false
+);
+
 draw_set_alpha(1);
 draw_set_colour(c_white);
 
@@ -43,7 +60,7 @@ if (coin_collected) {
     draw_collect_y,
     collect_scale,
     collect_scale,
-    image_angle,
+    0,
     c_white,
     burst_alpha
   );
@@ -75,7 +92,7 @@ draw_sprite_ext(
   y,
   pulse,
   pulse,
-  image_angle,
+  0,
   c_white,
   expiry_alpha
 );

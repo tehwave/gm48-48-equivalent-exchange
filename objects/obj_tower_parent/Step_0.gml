@@ -13,6 +13,10 @@ if (tower_upgrade_shine_steps_remaining > 0) {
   tower_upgrade_shine_steps_remaining -= 1;
 }
 
+if (tower_failed_upgrade_shake_steps_remaining > 0) {
+  tower_failed_upgrade_shake_steps_remaining -= 1;
+}
+
 if (abs(tower_scale_current - tower_scale_target) > 0.003) {
   tower_scale_current = lerp(tower_scale_current, tower_scale_target, 0.22);
 } else {

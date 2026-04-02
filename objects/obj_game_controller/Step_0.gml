@@ -168,7 +168,7 @@ if (global.build_mode) {
 
     if (tower_object == noone) {
       audio_play_variation(WAV_Snake_Hiss_1, WAV_Snake_Hiss_2, AUDIO_GAIN_UI * 0.42, 0.95, 1.05);
-    } else if (!game_try_spend_hp(placement_hp_cost)) {
+    } else if (!game_try_spend_hp(placement_hp_cost, target_base_id.x, target_base_id.y)) {
       audio_play_variation(WAV_Snake_Hiss_1, WAV_Snake_Hiss_2, AUDIO_GAIN_UI * 0.42, 0.95, 1.05);
     } else {
       target_base_id.tower_instance_id = instance_create_layer(target_base_id.x, target_base_id.y, "Instances", tower_object, {
@@ -209,6 +209,7 @@ if (global.build_mode) {
       var confirm_upgrade_cost = scr_tower_upgrade_cost(global.selected_tower_id.object_index, confirm_target_level);
 
       if (confirm_upgrade_cost <= 0 || global.player_coins < confirm_upgrade_cost) {
+        game_trigger_tower_upgrade_fail_feedback(global.selected_tower_id);
         audio_play_variation(WAV_Snake_Hiss_1, WAV_Snake_Hiss_2, AUDIO_GAIN_UI * 0.42, 0.95, 1.05);
         global.confirm_action = "";
         global.confirm_timer_steps = 0;
@@ -226,6 +227,7 @@ if (global.build_mode) {
       var upgrade_cost = scr_tower_upgrade_cost(global.selected_tower_id.object_index, target_level);
 
       if (upgrade_cost <= 0 || global.player_coins < upgrade_cost) {
+        game_trigger_tower_upgrade_fail_feedback(global.selected_tower_id);
         audio_play_variation(WAV_Snake_Hiss_1, WAV_Snake_Hiss_2, AUDIO_GAIN_UI * 0.42, 0.95, 1.05);
         global.confirm_action = "";
         global.confirm_timer_steps = 0;
