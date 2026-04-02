@@ -46,10 +46,11 @@ target_id = scr_find_tower_target(id, tower_range);
 
 if (instance_exists(target_id)) {
   tower_facing_angle = point_direction(x, y, target_id.x, target_id.y);
+  image_angle = tower_facing_angle;
 
   if (tower_directional_sprite_enabled) {
     /// @type {Real}
-    var normalized_angle = (tower_facing_angle + tower_directional_sprite_angle_offset) mod 360;
+    var normalized_angle = ((-tower_facing_angle) + tower_directional_sprite_angle_offset) mod 360;
     if (normalized_angle < 0) normalized_angle += 360;
 
     /// @type {Real}
@@ -64,9 +65,15 @@ if (instance_exists(target_id)) {
       tower_directional_sprite_index = direction_index;
 
       /// @type {String}
-      var directional_sprite_name = tower_directional_sprite_prefix + "_" + string(tower_directional_sprite_index);
+      var directional_suffix = string_format(tower_directional_sprite_index, 2, 0);
+      var directional_sprite_name = tower_directional_sprite_prefix + "_" + directional_suffix;
       /// @type {Asset.GMSprite|Real}
       var directional_sprite_asset = asset_get_index(directional_sprite_name);
+
+      if (directional_sprite_asset == -1) {
+        directional_sprite_name = tower_directional_sprite_prefix + "_" + string(tower_directional_sprite_index);
+        directional_sprite_asset = asset_get_index(directional_sprite_name);
+      }
 
       if (directional_sprite_asset != -1) {
         sprite_index = directional_sprite_asset;

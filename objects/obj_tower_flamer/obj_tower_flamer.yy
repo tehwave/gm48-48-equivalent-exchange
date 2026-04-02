@@ -31,8 +31,8 @@
   "resourceVersion":"2.0",
   "solid":false,
   "spriteId":{
-    "name":"SPR_Flamer_1",
-    "path":"sprites/SPR_Flamer_1/SPR_Flamer_1.yy",
+    "name":"SPR_Flamer_11",
+    "path":"sprites/SPR_Flamer_11/SPR_Flamer_11.yy",
   },
   "spriteMaskId":null,
   "visible":true,

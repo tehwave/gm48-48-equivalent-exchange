@@ -32,8 +32,8 @@
   "resourceVersion":"2.0",
   "solid":false,
   "spriteId":{
-    "name":"SPR_Explosive_1",
-    "path":"sprites/SPR_Explosive_1/SPR_Explosive_1.yy",
+    "name":"SPR_Explosive_11",
+    "path":"sprites/SPR_Explosive_11/SPR_Explosive_11.yy",
   },
   "spriteMaskId":null,
   "visible":true,
