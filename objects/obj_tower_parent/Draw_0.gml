@@ -262,6 +262,12 @@ if (should_draw_attack_vfx && !draw_attack_vfx_above_tower) {
   var frame_count = sprite_get_number(tower_attack_vfx_sprite);
   /// @type {Real}
   var frame_index = clamp(frame_count - tower_attack_vfx_steps_remaining, 0, frame_count - 1);
+  if (tower_is_flamer) {
+    // Keep flamer flame motion continuous instead of restarting each attack tick.
+    /// @type {Real}
+    var flame_phase_seed = floor((x * 0.13) + (y * 0.17));
+    frame_index = (floor(current_time * 0.03) + flame_phase_seed) mod frame_count;
+  }
   /// @type {Real}
   var vfx_angle = tower_attack_vfx_angle + tower_attack_vfx_angle_offset;
   /// @type {Real}
@@ -285,6 +291,12 @@ if (should_draw_attack_vfx && draw_attack_vfx_above_tower) {
   var frame_count_above = sprite_get_number(tower_attack_vfx_sprite);
   /// @type {Real}
   var frame_index_above = clamp(frame_count_above - tower_attack_vfx_steps_remaining, 0, frame_count_above - 1);
+  if (tower_is_flamer) {
+    // Keep flamer flame motion continuous instead of restarting each attack tick.
+    /// @type {Real}
+    var flame_phase_seed_above = floor((x * 0.13) + (y * 0.17));
+    frame_index_above = (floor(current_time * 0.03) + flame_phase_seed_above) mod frame_count_above;
+  }
   /// @type {Real}
   var vfx_angle_above = tower_attack_vfx_angle + tower_attack_vfx_angle_offset;
   /// @type {Real}

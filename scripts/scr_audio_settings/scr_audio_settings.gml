@@ -147,7 +147,7 @@ function game_audio_ui_get_layout(gui_width, gui_height) {
   /// @type {Real}
   var icon_button_width = 28;
   /// @type {Real}
-  var value_width = 72;
+  var value_width = 96;
   /// @type {Real}
   var inner_margin = 10;
   /// @type {Real}

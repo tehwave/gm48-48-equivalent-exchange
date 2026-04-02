@@ -652,7 +652,7 @@ draw_set_colour(global.audio_master_muted ? c_silver : c_white);
 draw_text_shadow(
   (audio_ui_layout.value_x1 + audio_ui_layout.value_x2) * 0.5,
   (audio_ui_layout.value_y1 + audio_ui_layout.value_y2) * 0.5,
-  "Volume " + string(volume_percent) + "%"
+  "Vol " + string(volume_percent) + "%"
 );
 
 draw_set_halign(fa_left);
