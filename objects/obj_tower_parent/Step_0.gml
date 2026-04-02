@@ -46,6 +46,7 @@ target_id = scr_find_tower_target(id, tower_range);
 
 if (instance_exists(target_id)) {
   tower_facing_angle = point_direction(x, y, target_id.x, target_id.y);
+  tower_directional_display_angle = tower_facing_angle;
   if (tower_sprite_rotates_to_target) {
     image_angle = tower_facing_angle;
   } else {
@@ -86,6 +87,11 @@ if (instance_exists(target_id)) {
         sprite_index = directional_sprite_asset;
       }
     }
+
+    /// Match VFX direction to the displayed directional sector.
+    /// @type {Real}
+    var displayed_normalized_angle = (tower_directional_sprite_index - 1) * sector_size;
+    tower_directional_display_angle = tower_directional_sprite_angle_offset - displayed_normalized_angle;
   }
 }
 
@@ -97,10 +103,9 @@ if (!instance_exists(target_id)) exit;
 if (cooldown_steps_remaining > 0) exit;
 
 tower_attack_vfx_angle = tower_facing_angle;
-/// @type {Asset.GMObject|Real}
-var flamer_object = asset_get_index("obj_tower_flamer");
-/// @type {Asset.GMObject|Real}
-var freeze_object = asset_get_index("obj_tower_freeze");
+if (tower_directional_sprite_enabled) {
+  tower_attack_vfx_angle = tower_directional_display_angle;
+}
 
 if (object_index == obj_tower_arrow) {
   /// @type {Real}
@@ -145,7 +150,7 @@ if (object_index == obj_tower_arrow) {
     proj_speed : 9,
     proj_source_tower_id : id
   });
-} else if (flamer_object != -1 && object_index == flamer_object) {
+} else if (tower_is_flamer) {
   if (tower_flamer_sound_cooldown_steps_remaining <= 0) {
     audio_play_variation(WAV_Flame_Swoosh_1, WAV_Flame_Swoosh_2, AUDIO_GAIN_COMBAT, 0.97, 1.06);
     tower_flamer_sound_cooldown_steps_remaining = tower_flamer_sound_cooldown_steps_total;
@@ -153,22 +158,27 @@ if (object_index == obj_tower_arrow) {
 
   /// @type {Real}
   var half_cone_angle = tower_cone_angle * 0.5;
+  /// @type {DS.List}
+  var hit_enemy_ids = ds_list_create();
+  /// @type {Real}
+  var hit_count = collision_circle_list(x, y, tower_range, obj_enemy_parent, false, false, hit_enemy_ids, false);
 
-  with (obj_enemy_parent) {
-    if (is_dead || has_leaked) continue;
+  for (var hit_index = 0; hit_index < hit_count; hit_index += 1) {
+    /// @type {Id.Instance|Real}
+    var enemy_id = hit_enemy_ids[| hit_index];
+    if (!instance_exists(enemy_id)) continue;
+    if (enemy_id.is_dead || enemy_id.has_leaked) continue;
 
     /// @type {Real}
-    var dist = point_distance(other.x, other.y, x, y);
-    if (dist > other.tower_range) continue;
+    var enemy_angle = point_direction(x, y, enemy_id.x, enemy_id.y);
+    if (abs(angle_difference(enemy_angle, tower_attack_vfx_angle)) > half_cone_angle) continue;
 
-    /// @type {Real}
-    var enemy_angle = point_direction(other.x, other.y, x, y);
-    if (abs(angle_difference(enemy_angle, other.tower_attack_vfx_angle)) > half_cone_angle) continue;
-
-    enemy_take_damage(id, other.tower_damage, other.id);
-    enemy_apply_burn(id, other.tower_burn_damage_per_tick, other.tower_burn_duration_steps);
+    enemy_take_damage(enemy_id, tower_damage, id);
+    enemy_apply_burn(enemy_id, tower_burn_damage_per_tick, tower_burn_duration_steps);
   }
-} else if (freeze_object != -1 && object_index == freeze_object) {
+
+  ds_list_destroy(hit_enemy_ids);
+} else if (tower_is_freeze) {
   audio_play_one_shot(WAV_Lightning_Swoosh_1, AUDIO_GAIN_COMBAT, 0.98, 1.02);
   enemy_take_damage(target_id, tower_damage, id);
   enemy_apply_freeze(target_id, tower_freeze_duration_steps);

@@ -78,6 +78,7 @@
     {"id":{"name":"__gmsync_exec","path":"scripts/__gmsync_exec/__gmsync_exec.yy",},},
     {"id":{"name":"__gmsync_log","path":"scripts/__gmsync_log/__gmsync_log.yy",},},
     {"id":{"name":"_gsb_try_connect","path":"scripts/_gsb_try_connect/_gsb_try_connect.yy",},},
+    {"id":{"name":"scr_audio_settings","path":"scripts/scr_audio_settings/scr_audio_settings.yy",},},
     {"id":{"name":"scr_game_constants","path":"scripts/scr_game_constants/scr_game_constants.yy",},},
     {"id":{"name":"scr_game_state","path":"scripts/scr_game_state/scr_game_state.yy",},},
     {"id":{"name":"scr_wave_utils","path":"scripts/scr_wave_utils/scr_wave_utils.yy",},},

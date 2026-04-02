@@ -1,6 +1,6 @@
 /// @description Initializes run state and wave scheduling.
 
-audio_master_gain(AUDIO_MASTER_GAIN);
+game_audio_settings_load();
 
 global.player_hp = STARTING_HP;
 global.player_coins = STARTING_COINS;

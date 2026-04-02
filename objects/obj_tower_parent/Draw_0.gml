@@ -236,8 +236,28 @@ if (global.debug_mode) {
 
 /// @type {Bool}
 var should_draw_attack_vfx = (tower_attack_vfx_sprite != -1 && tower_attack_vfx_steps_remaining > 0);
+/// @type {Bool}
+var draw_attack_vfx_above_tower = tower_attack_vfx_draw_above_tower;
+/// @type {Real}
+var vfx_anchor_x = x + draw_offset_x;
+/// @type {Real}
+var vfx_anchor_y = y + draw_offset_y;
 
-if (should_draw_attack_vfx && !tower_attack_vfx_draw_above_tower) {
+if (tower_is_flamer && should_draw_attack_vfx) {
+  /// Keep flamer VFX below tower except when aiming downward on screen.
+  draw_attack_vfx_above_tower = (lengthdir_y(1, tower_attack_vfx_angle) > 0);
+}
+
+if (should_draw_attack_vfx) {
+  vfx_anchor_y += tower_attack_vfx_origin_lift;
+  if (tower_attack_vfx_origin_forward != 0) {
+    /// Push the muzzle anchor forward so VFX starts near the tower head.
+    vfx_anchor_x += lengthdir_x(tower_attack_vfx_origin_forward, tower_attack_vfx_angle);
+    vfx_anchor_y += lengthdir_y(tower_attack_vfx_origin_forward, tower_attack_vfx_angle);
+  }
+}
+
+if (should_draw_attack_vfx && !draw_attack_vfx_above_tower) {
   /// @type {Real}
   var frame_count = sprite_get_number(tower_attack_vfx_sprite);
   /// @type {Real}
@@ -245,9 +265,9 @@ if (should_draw_attack_vfx && !tower_attack_vfx_draw_above_tower) {
   /// @type {Real}
   var vfx_angle = tower_attack_vfx_angle + tower_attack_vfx_angle_offset;
   /// @type {Real}
-  var vfx_x = x + draw_offset_x + lengthdir_x(tower_attack_vfx_distance, vfx_angle);
+  var vfx_x = vfx_anchor_x + lengthdir_x(tower_attack_vfx_distance, vfx_angle);
   /// @type {Real}
-  var vfx_y = y + draw_offset_y + lengthdir_y(tower_attack_vfx_distance, vfx_angle);
+  var vfx_y = vfx_anchor_y + lengthdir_y(tower_attack_vfx_distance, vfx_angle);
   draw_sprite_ext(tower_attack_vfx_sprite, frame_index, vfx_x, vfx_y, tower_attack_vfx_scale, tower_attack_vfx_scale, vfx_angle, c_white, 1);
 }
 
@@ -260,7 +280,7 @@ if (sprite_index != -1) {
   }
 }
 
-if (should_draw_attack_vfx && tower_attack_vfx_draw_above_tower) {
+if (should_draw_attack_vfx && draw_attack_vfx_above_tower) {
   /// @type {Real}
   var frame_count_above = sprite_get_number(tower_attack_vfx_sprite);
   /// @type {Real}
@@ -268,9 +288,9 @@ if (should_draw_attack_vfx && tower_attack_vfx_draw_above_tower) {
   /// @type {Real}
   var vfx_angle_above = tower_attack_vfx_angle + tower_attack_vfx_angle_offset;
   /// @type {Real}
-  var vfx_x_above = x + draw_offset_x + lengthdir_x(tower_attack_vfx_distance, vfx_angle_above);
+  var vfx_x_above = vfx_anchor_x + lengthdir_x(tower_attack_vfx_distance, vfx_angle_above);
   /// @type {Real}
-  var vfx_y_above = y + draw_offset_y + lengthdir_y(tower_attack_vfx_distance, vfx_angle_above);
+  var vfx_y_above = vfx_anchor_y + lengthdir_y(tower_attack_vfx_distance, vfx_angle_above);
   draw_sprite_ext(tower_attack_vfx_sprite, frame_index_above, vfx_x_above, vfx_y_above, tower_attack_vfx_scale, tower_attack_vfx_scale, vfx_angle_above, c_white, 1);
 }
 

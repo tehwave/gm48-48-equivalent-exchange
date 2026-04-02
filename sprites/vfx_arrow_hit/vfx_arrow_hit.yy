@@ -36,7 +36,7 @@
   ],
   "name":"vfx_arrow_hit",
   "nineSlice":null,
-  "origin":7,
+  "origin":4,
   "parent":{
     "name":"Sprites",
     "path":"folders/Sprites.yy",
@@ -128,7 +128,7 @@
     "visibleRange":null,
     "volume":1.0,
     "xorigin":77,
-    "yorigin":155,
+    "yorigin":77,
   },
   "swatchColours":null,
   "swfPrecision":0.5,

@@ -7,6 +7,8 @@ var gui_height = display_get_gui_height();
 /// @type {Bool}
 var is_intro_screen = global.game_state == GAME_STATE_INTRO;
 
+game_audio_settings_ensure_globals();
+
 /// Draw a short red edge pulse when enemies leak Life.
 /// Render this first in Draw GUI so all HUD/panels/text appear above it.
 if (variable_global_exists("leak_edge_flash_steps_remaining") && global.leak_edge_flash_steps_remaining > 0) {
@@ -532,6 +534,130 @@ for (var particle_index = 0; particle_index < spend_particle_count; particle_ind
 draw_set_alpha(1);
 draw_set_colour(c_white);
 global.coin_spend_particles = active_spend_particles;
+
+/// @type {Struct}
+var audio_ui_layout = game_audio_ui_get_layout(gui_width, gui_height);
+/// @type {String}
+var mute_button_text = global.audio_master_muted ? "Unmute" : "Mute";
+/// @type {Real}
+var volume_percent = round(game_audio_clamp_master_gain(global.audio_master_volume_gain) * 100);
+/// @type {Colour}
+var mute_button_fill = global.audio_master_muted ? make_color_rgb(116, 38, 38) : make_color_rgb(32, 94, 56);
+
+scr_draw_rounded_panel(
+  audio_ui_layout.panel_x,
+  audio_ui_layout.panel_y,
+  audio_ui_layout.panel_width,
+  audio_ui_layout.panel_height,
+  0.48,
+  12
+);
+
+draw_set_alpha(0.52);
+draw_set_colour(mute_button_fill);
+draw_roundrect_ext(
+  audio_ui_layout.mute_x1,
+  audio_ui_layout.mute_y1,
+  audio_ui_layout.mute_x2,
+  audio_ui_layout.mute_y2,
+  7,
+  7,
+  false
+);
+
+draw_set_alpha(0.36);
+draw_set_colour(c_black);
+draw_roundrect_ext(
+  audio_ui_layout.minus_x1,
+  audio_ui_layout.minus_y1,
+  audio_ui_layout.minus_x2,
+  audio_ui_layout.minus_y2,
+  7,
+  7,
+  false
+);
+draw_roundrect_ext(
+  audio_ui_layout.plus_x1,
+  audio_ui_layout.plus_y1,
+  audio_ui_layout.plus_x2,
+  audio_ui_layout.plus_y2,
+  7,
+  7,
+  false
+);
+
+draw_set_alpha(0.24);
+draw_set_colour(c_black);
+draw_roundrect_ext(
+  audio_ui_layout.value_x1,
+  audio_ui_layout.value_y1,
+  audio_ui_layout.value_x2,
+  audio_ui_layout.value_y2,
+  7,
+  7,
+  false
+);
+
+draw_set_alpha(0.78);
+draw_set_colour(c_white);
+draw_roundrect_ext(
+  audio_ui_layout.mute_x1,
+  audio_ui_layout.mute_y1,
+  audio_ui_layout.mute_x2,
+  audio_ui_layout.mute_y2,
+  7,
+  7,
+  true
+);
+draw_roundrect_ext(
+  audio_ui_layout.minus_x1,
+  audio_ui_layout.minus_y1,
+  audio_ui_layout.minus_x2,
+  audio_ui_layout.minus_y2,
+  7,
+  7,
+  true
+);
+draw_roundrect_ext(
+  audio_ui_layout.plus_x1,
+  audio_ui_layout.plus_y1,
+  audio_ui_layout.plus_x2,
+  audio_ui_layout.plus_y2,
+  7,
+  7,
+  true
+);
+
+draw_set_alpha(1);
+draw_set_font(fnt_body);
+draw_set_halign(fa_center);
+draw_set_valign(fa_middle);
+draw_set_colour(c_white);
+draw_text_shadow(
+  (audio_ui_layout.mute_x1 + audio_ui_layout.mute_x2) * 0.5,
+  (audio_ui_layout.mute_y1 + audio_ui_layout.mute_y2) * 0.5,
+  mute_button_text
+);
+draw_text_shadow(
+  (audio_ui_layout.minus_x1 + audio_ui_layout.minus_x2) * 0.5,
+  (audio_ui_layout.minus_y1 + audio_ui_layout.minus_y2) * 0.5,
+  "-"
+);
+draw_text_shadow(
+  (audio_ui_layout.plus_x1 + audio_ui_layout.plus_x2) * 0.5,
+  (audio_ui_layout.plus_y1 + audio_ui_layout.plus_y2) * 0.5,
+  "+"
+);
+draw_set_colour(global.audio_master_muted ? c_silver : c_white);
+draw_text_shadow(
+  (audio_ui_layout.value_x1 + audio_ui_layout.value_x2) * 0.5,
+  (audio_ui_layout.value_y1 + audio_ui_layout.value_y2) * 0.5,
+  string(volume_percent) + "%"
+);
+
+draw_set_halign(fa_left);
+draw_set_valign(fa_top);
+draw_set_colour(c_white);
 
 if (game_is_running() && !global.build_mode && !instance_exists(global.selected_tower_id)) {
   /// @type {Real}

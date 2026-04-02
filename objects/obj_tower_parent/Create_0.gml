@@ -25,6 +25,8 @@ tower_attack_vfx_scale = 0.24;
 tower_attack_vfx_angle = 0;
 tower_attack_vfx_angle_offset = 0;
 tower_attack_vfx_distance = 0;
+tower_attack_vfx_origin_lift = 0;
+tower_attack_vfx_origin_forward = 0;
 tower_attack_vfx_draw_above_tower = true;
 
 tower_spawn_anim_steps_total = max(1, round(room_speed * 0.30));
@@ -34,10 +36,13 @@ tower_directional_sprite_enabled = false;
 tower_directional_sprite_prefix = "";
 tower_directional_sprite_index = 1;
 tower_directional_sprite_angle_offset = TOWER_DIRECTION_SPRITE_ANGLE_OFFSET;
+tower_directional_display_angle = 0;
 tower_spawn_anim_steps_remaining = tower_spawn_anim_steps_total;
 tower_fire_recoil_steps_total = max(2, round(room_speed * 0.16));
 tower_fire_recoil_steps_remaining = 0;
 tower_fire_wiggle_dir = choose(-1, 1);
+tower_is_flamer = false;
+tower_is_freeze = false;
 
 base_owner_id = variable_instance_exists(id, "base_owner_id") ? base_owner_id : noone;
 
@@ -72,15 +77,19 @@ if (object_index == obj_tower_arrow) {
 	tower_attack_vfx_scale = 0.24;
 	tower_sprite_scale = 0.82;
 } else if (flamer_object != -1 && object_index == flamer_object) {
+	tower_is_flamer = true;
 	tower_directional_sprite_enabled = true;
 	tower_directional_sprite_prefix = "SPR_Flamer";
 	tower_attack_vfx_sprite = SPR_Flamer_VFX;
 	tower_attack_vfx_scale = 0.7;
 	tower_attack_vfx_angle_offset = 0;
 	tower_attack_vfx_distance = 14;
-	tower_attack_vfx_draw_above_tower = true;
+	tower_attack_vfx_origin_lift = -12;
+	tower_attack_vfx_origin_forward = 10;
+	tower_attack_vfx_draw_above_tower = false;
 	tower_sprite_scale = 0.84;
 } else if (freeze_object != -1 && object_index == freeze_object) {
+	tower_is_freeze = true;
 	tower_directional_sprite_enabled = false;
 	tower_sprite_rotates_to_target = false;
 	tower_directional_sprite_prefix = "SPR_Freeze";
