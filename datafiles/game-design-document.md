@@ -1,8 +1,8 @@
-# Equivalent Exchange - Game Design Document (Jam MVP)
+# Equivalent Exchange - Game Design Document
 
 ## 1. High Concept
 
-`Equivalent Exchange` is a short-session tower defense game where the player must spend life to place towers.
+`Equivalent Exchange` is a tower defense game where the player must spend life to place towers.
 
 - Every tower placement costs exactly `1 life`.
 - Enemies that leak also remove life.
@@ -10,31 +10,30 @@
 
 This creates constant pressure: overbuilding kills you, underbuilding leaks kill you.
 
-## 2. Jam Constraints and Scope
+## 2. Scope
 
-Target build time: `5 hours`
-
-Scope locked for MVP:
+The game is a single self-contained tower defense run:
 
 1. 1 level only
-2. 48 waves total (required)
-3. 1 normal enemy + 1 boss enemy
-4. 3 tower types: slow, arrow, cannon (AoE)
+2. 48 waves total
+3. 2 enemy types: basic + boss
+4. 5 tower types: arrow, cannon, slow, freeze, flamer
 5. HP cost for placement (1 HP)
 6. Coins used for upgrades
 7. Build only on predefined base platforms
+8. Tower sell with partial life refund
 
-Out of scope for jam:
+Out of scope:
 
-- Multiple maps
-- Skill trees
-- Meta progression
-- Complicated status systems
+- Multiple maps or levels
+- Skill trees or meta-progression
+- Procedural generation
+- Additional enemy/tower archetypes beyond the existing roster
 
 ## 3. Core Loop
 
 1. Wave starts and enemies follow fixed path to goal.
-2. Player places towers on platform tiles by paying `1 life` per tower.
+2. Player places towers on platform tiles by paying `3 life` per tower.
 3. Towers attack enemies and generate coins from kills.
 4. Player spends coins to upgrade towers.
 5. Leaks reduce life.
@@ -48,15 +47,16 @@ Win condition:
 
 - Clear Wave 48.
 
-## 4. Starting Values (Locked)
+## 4. Starting Values
 
-Based on current design decisions:
+Current implementation (all defined in `scr_game_constants`):
 
-- Starting life: `50`
-- Tower placement life cost: `1`
-- Starting coins: `25`
+- Starting life: `48`
+- Starting coins: `48`
+- Tower placement life cost: `3`
 - Normal enemy leak damage: `1 life`
 - Boss leak damage: `5 life`
+- Boss kill HP reward: `3 life`
 - Time between waves: `2.5 seconds`
 - Upgrade depth: `3 levels total` per tower (`L1 base, L2, L3`)
 
@@ -69,76 +69,73 @@ Two resources:
 
 Resource rules:
 
-1. Placing any tower always costs `1 life`.
+1. Placing any tower costs `3 life`.
 2. Upgrades never cost life, only coins.
 3. Kills grant coins.
-4. Boss kills grant large coin payout ("fat coins").
+4. Boss kills grant coins AND restore `3 life`.
 
-Suggested coin rewards:
+Coin rewards:
 
-- Normal enemy kill: `+2 coins`
-- Boss kill: `+30 coins`
+- Normal enemy kill: `+4 coins`
+- Boss kill: `+20 coins` + `+3 life`
 
 ## 6. Tower Roster
 
 All towers have 3 levels. Build cost is always 1 life regardless of type.
 
+All stats are centralized in `scr_game_constants` and applied via `scr_tower_apply_level_stats()`.
+
 ### 6.1 Slow Tower (control)
 
 Role: utility and lane control.
 
-- L1: low damage, applies slow
-- L2: better slow and slight damage boost
-- L3: strong slow aura on hit
+- L1: damage `4`, fire rate `1.1s`, range `150`, slow `30%` for `1.2s`
+- L2: damage `7`, fire rate `1.0s`, range `165`, slow `40%` for `1.4s`
+- L3: damage `10`, fire rate `0.85s`, range `180`, slow `50%` for `1.6s`
 
-Suggested stats:
-
-- L1: damage `2`, fire rate `1.0/s`, range `160`, slow `20%` for `1.2s`
-- L2: damage `3`, fire rate `1.1/s`, range `170`, slow `30%` for `1.4s`
-- L3: damage `4`, fire rate `1.2/s`, range `180`, slow `40%` for `1.6s`
-
-Upgrade coin costs:
-
-- L1 -> L2: `20`
-- L2 -> L3: `35`
+Upgrade costs: L2 `34`, L3 `59`
 
 ### 6.2 Arrow Tower (single target DPS)
 
 Role: reliable sustained damage.
 
-- L1: fast single-target
-- L2: better rate and damage
-- L3: strong single-target finisher
+- L1: damage `8`, fire rate `0.75s`, range `165`
+- L2: damage `13`, fire rate `0.65s`, range `180`
+- L3: damage `20`, fire rate `0.55s`, range `200`
 
-Suggested stats:
-
-- L1: damage `7`, fire rate `1.2/s`, range `220`
-- L2: damage `10`, fire rate `1.35/s`, range `230`
-- L3: damage `14`, fire rate `1.5/s`, range `240`
-
-Upgrade coin costs:
-
-- L1 -> L2: `25`
-- L2 -> L3: `40`
+Upgrade costs: L2 `28`, L3 `54`
 
 ### 6.3 Cannon Tower (AoE)
 
 Role: wave clear and crowd burst.
 
-- L1: slow reload, splash damage
-- L2: stronger blast
-- L3: high-impact wave control
+- L1: damage `12`, fire rate `1.35s`, range `190`, splash radius `55`
+- L2: damage `18`, fire rate `1.2s`, range `210`, splash radius `70`
+- L3: damage `27`, fire rate `1.05s`, range `230`, splash radius `88`
 
-Suggested stats:
+Upgrade costs: L2 `40`, L3 `70`
 
-- L1: impact damage `14`, splash radius `48`, fire rate `0.55/s`, range `190`
-- L2: impact damage `20`, splash radius `56`, fire rate `0.60/s`, range `200`
-- L3: impact damage `28`, splash radius `64`, fire rate `0.65/s`, range `210`
+### 6.4 Freeze Tower (hard CC)
 
-Upgrade coin costs:
+Role: area denial and burst lockdown.
 
-- L1 -> L2: `30`
-- L2 -> L3: `50`
+- L1: damage `3`, fire rate `1.25s`, range `145`, freeze `0.8s`
+- L2: damage `5`, fire rate `1.1s`, range `165`, freeze `1.0s`
+- L3: damage `8`, fire rate `0.95s`, range `185`, freeze `1.2s`
+
+Upgrade costs: L2 `45`, L3 `82`
+
+### 6.5 Flamer Tower (DoT / cone AoE)
+
+Role: sustained area damage with burn.
+
+- L1: damage `3`, fire rate `0.28s`, range `130`, cone `70°`, burn `1.0/tick` for `1.1s`
+- L2: damage `5`, fire rate `0.24s`, range `145`, cone `80°`, burn `1.5/tick` for `1.4s`
+- L3: damage `7`, fire rate `0.20s`, range `160`, cone `90°`, burn `2.2/tick` for `1.8s`
+
+Upgrade costs: L2 `42`, L3 `76`
+
+Burn tick rate: `0.25s` (ENEMY_BURN_TICK_SECONDS)
 
 ## 7. Enemy Roster
 
@@ -219,15 +216,15 @@ Placement constraints:
 
 1. Tower can only be placed on instances of `obj_tower_base`.
 2. Cannot place if occupied by an existing tower.
-3. Cannot place if `player_hp < 1`.
+3. Cannot place if `player_hp < 3`.
 
 Placement transaction:
 
 1. Player confirms placement.
 2. Tower instance is created.
-3. `player_hp -= 1` exactly once.
+3. `player_hp -= 3` exactly once.
 
-No refund in MVP (to keep rules simple and punish overbuilding).
+Selling a tower returns 1 life (partial refund).
 
 ## 10. One-Level Layout Plan
 
@@ -309,41 +306,17 @@ Equivalent exchange feel checks:
 - If player greedily saves life, leaks punish them.
 - Winning should feel like balancing on edge, not brute force.
 
-## 14. 5-Hour Execution Plan
+## 14. Polish Priorities
 
-### Hour 1: Foundation
-
-1. Global state in `obj_game_controller`
-2. Path-following enemy base logic in `obj_enemy_parent`
-3. Basic wave spawn loop
-
-### Hour 2: Towers
-
-1. Targeting and cooldown in `obj_tower_parent`
-2. Implement arrow tower first
-3. Implement placement on `obj_tower_base` with 1-life cost
-
-### Hour 3: Remaining Combat
-
-1. Add slow tower behavior
-2. Add cannon AoE behavior
-3. Add boss enemy variant
-
-### Hour 4: Economy + UI
-
-1. Coin rewards and upgrades
-2. HUD values in `obj_gui`
-3. Wave/boss banners and lose/win screens
-
-### Hour 5: Balance + Polish
-
-1. Tune wave pacing and stats
-2. Verify all 48 waves run
-3. Fix edge cases and do one full playtest pass
+1. Balance and tune the full 48-wave difficulty curve
+2. Visual and audio feedback (hit effects, tower animations, sound cues)
+3. Game feel improvements (UI transitions, placement readability)
+4. Bug fixes and edge-case handling
+5. Quality-of-life features within existing scope
 
 ## 15. Acceptance Checklist (Definition of Done)
 
-MVP is complete when all are true:
+The game is complete when all are true:
 
 1. Player can place towers only on base platforms.
 2. Every placement costs exactly 1 life.
@@ -358,12 +331,8 @@ MVP is complete when all are true:
 11. Game ends at life <= 0.
 12. Wave 48 is beatable but difficult.
 
-## 16. Open Questions for Next Iteration
+## 16. Open Questions
 
-These are optional post-MVP choices:
-
-1. Add tower sell with partial life refund?
-2. Add wave skip button for experienced players?
-3. Add one elite enemy between bosses?
-
-For jam safety, do not implement these unless MVP is already stable.
+1. Add wave skip button for experienced players?
+2. Add one elite enemy type between bosses?
+3. Additional visual polish passes (particles, screen shake, etc.)?

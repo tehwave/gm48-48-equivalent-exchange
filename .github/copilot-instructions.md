@@ -2,27 +2,28 @@
 
 ## Project Overview
 
-This project is a **GameMaker Studio 2 tower defense game** for a game jam.
+This project is a **GameMaker Studio 2 tower defense game** originally built for the gm(48) game jam and now being developed as a polished post-jam release.
 
 Theme: **Equivalent Exchange**
 
 Core mechanic: **The player spends life (HP) to place towers.**
 If you over-build, you die. If you under-build, enemies leak and you die.
 
-The design goal is a short, readable, strategic loop that can be completed in one jam session.
+The design goal is a tight, readable, strategic loop within a deliberately small scope.
 
-## Jam Constraint (Critical)
+## Project Phase
 
-You have about **5 hours**. Favor speed and clarity over feature depth.
+This is the **post-jam polish version**. The jam build was submitted successfully. There are no deadline constraints — prioritize quality, correctness, and polish over speed.
 
 When generating code or suggestions, optimize for:
 
-1. Fast implementation
-2. Low bug risk
-3. Easy balancing with a few constants
-4. Reuse of simple patterns
+1. Clean, maintainable implementation
+2. Correct behavior and edge-case handling
+3. Good game feel and polish
+4. Easy balancing with centralized constants
+5. Reuse of simple patterns
 
-Avoid proposing large systems that are hard to finish (save system, procedural map generation, complex status trees, etc.).
+The scope of the game is intentionally small. Do not propose systems that expand it beyond what it already is (no new maps, no meta-progression, no procedural generation, no skill trees). Improve what exists rather than adding new pillars.
 
 ## Tech Stack
 
@@ -41,23 +42,26 @@ Avoid proposing large systems that are hard to finish (save system, procedural m
 
 This economy is intentionally harsh: life is both your health bar and your build currency.
 
-## MVP Scope (Do This First)
+## Game Scope
 
-Implement these before anything else:
+The game is one self-contained tower defense run on a single map:
 
 1. One playable map with one enemy path
-2. One basic enemy type
-3. One basic tower type
+2. Two enemy types (basic + boss)
+3. Five tower types (arrow, cannon, slow, freeze, flamer)
 4. Tower placement with HP cost
-5. Wave spawning that scales over time
-6. Lose state when HP <= 0
-7. Minimal UI: HP, wave, tower cost, placement preview
+5. Coin economy for upgrades
+6. 48 waves with boss waves every 12
+7. Win state at wave 48, lose state at HP <= 0
+8. Full UI: HP, coins, wave counter, tower selection, upgrade/sell, placement preview
 
-If time remains, add only small upgrades:
+Polish priorities (now that the jam is over):
 
-1. Second tower type
-2. Tower upgrade OR sell (not both unless trivial)
-3. One enemy variant (fast or tank)
+1. Balancing and tuning across all 48 waves
+2. Visual and audio feedback (hit effects, tower animations, sound cues)
+3. Game feel improvements (camera, UI transitions, readability)
+4. Bug fixes and edge-case handling
+5. Quality-of-life features within existing scope
 
 ## Recommended Architecture
 
@@ -204,23 +208,29 @@ Then use targeted MCP tools for detail-level inspection:
 
 This order reduces hallucinated assumptions about object relationships and speeds up safe jam-time edits.
 
-## Out-of-Scope for Jam
+## Out of Scope
 
 Unless explicitly requested, avoid implementing:
 
-- Save/load profiles
-- Complex skill trees
-- Endless procedural paths
-- Large numbers of tower/enemy archetypes
-- Heavy shader/VFX work before gameplay is complete
+- Additional maps or levels
+- Save/load profiles or meta-progression
+- Complex skill trees or talent systems
+- Procedural paths or map generation
+- Large numbers of new tower/enemy archetypes beyond the existing roster
+- Narrative systems or cutscenes
 
-## Definition of Done (Jam Build)
+The game is one map, one path, 48 waves. Improve what's there — don't add new pillars.
+
+## Definition of Done (Post-Jam Release)
 
 The game is done when:
 
-1. You can start, place towers by spending HP, and survive at least one wave.
-2. Losing all HP always ends the run.
-3. Difficulty ramps in a noticeable but fair way over several waves.
-4. A new player can understand the tradeoff within 30 seconds.
+1. All 48 waves are completable with a well-tuned difficulty curve.
+2. Every tower type, enemy type, and upgrade level is balanced and functional.
+3. Losing all HP always ends the run.
+4. The HUD clearly communicates HP, coins, wave, costs, and game state.
+5. Visual and audio feedback makes the game feel polished and responsive.
+6. A new player can understand the core tradeoff within 30 seconds.
+7. No known bugs or stalls in wave logic, targeting, or placement.
 
 If a new feature risks breaking these conditions, skip it.

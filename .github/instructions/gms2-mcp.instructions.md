@@ -25,11 +25,12 @@ Use this workflow for game logic changes, bug fixes, balancing work, and archite
 - Use `mcp_gms2-mcp_list_project_assets` to confirm asset names and categories
 - Use room/sprite tools only when room setup or visual linkage is relevant
 
-## Jam-Speed Guidance
+## Implementation Guidance
 
-- Prefer smallest safe change that preserves the Equivalent Exchange loop
+- Prefer the smallest safe change that preserves the Equivalent Exchange loop
 - Reuse existing parent behaviors instead of introducing large new systems
-- Keep balance knobs centralized in constants/macros for fast tuning
+- Keep balance knobs centralized in constants/macros for tuning
+- Prioritize correctness and polish over speed
 
 ## Output Expectations
 
