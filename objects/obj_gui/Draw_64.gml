@@ -43,12 +43,12 @@ if (display_wave_index < TOTAL_WAVES) {
 var boss_timing_text = "No remaining boss waves";
 if (display_wave_index > 0 && scr_wave_is_boss(display_wave_index)) {
   if ((display_wave_index + BOSS_WAVE_INTERVAL) <= TOTAL_WAVES) {
-    boss_timing_text = "Boss: NOW | Next W" + string(display_wave_index + BOSS_WAVE_INTERVAL);
+    boss_timing_text = "Boss: NOW | Next Wave " + string(display_wave_index + BOSS_WAVE_INTERVAL);
   } else {
     boss_timing_text = "Boss: NOW | Final boss";
   }
 } else if (next_boss_wave > 0) {
-  boss_timing_text = "Boss: W" + string(next_boss_wave) + " (" + string(next_boss_wave - display_wave_index) + " waves)";
+  boss_timing_text = "Boss: Wave " + string(next_boss_wave) + " (in " + string(next_boss_wave - display_wave_index) + " waves)";
 }
 
 if (!is_intro_screen) {
@@ -62,7 +62,7 @@ if (!is_intro_screen) {
   var enemies_text = "Alive now: " + string(global.enemies_alive);
   /// @type {String}
   var next_wave_text = preview_wave_exists
-    ? "Next wave: W" + string(preview_wave_index) + " - " + string(preview_enemy_count) + " enemies"
+    ? "Next wave: Wave " + string(preview_wave_index) + ": " + string(preview_enemy_count) + " enemies"
     : "Next wave: End of run";
   draw_set_font(fnt_body);
   draw_set_colour(c_white);
@@ -81,9 +81,9 @@ if (!is_intro_screen) {
 }
 
 /// @type {Real}
-var top_right_width = 332;
+var top_right_width = 304;
 /// @type {Real}
-var top_right_height = 130;
+var top_right_height = 100;
 /// @type {Real}
 var top_right_x = gui_width - top_right_width - 16;
 /// @type {Real}
@@ -129,7 +129,7 @@ if (!is_intro_screen) {
   /// @type {Real}
   var life_text_x = top_right_x + 14;
   /// @type {Real}
-  var life_text_y = top_right_y + 10;
+  var life_text_y = top_right_y + 8;
 
   draw_set_font(fnt_heading);
   draw_set_colour(make_color_rgb(255, 134, 198));
@@ -137,15 +137,78 @@ if (!is_intro_screen) {
 
   draw_set_font(fnt_body);
   draw_set_colour(c_white);
-  draw_text_shadow(top_right_x + 14, top_right_y + 66, "Refund pool: " + string(round(hud_tower_life_invested)) + " Life");
+  draw_text_shadow(
+    top_right_x + 14,
+    top_right_y + 54,
+    "Refund " + string(round(hud_tower_life_invested)) + " | Pressure +" + string(hud_escalation_bonus)
+  );
   draw_set_colour(c_white);
-  draw_text_shadow(top_right_x + 14, top_right_y + 86, "Build pressure: +" + string(hud_escalation_bonus) + " Life");
   draw_set_colour(c_aqua);
   draw_text_shadow(
     top_right_x + 14,
-    top_right_y + 106,
-    "Cost now/after: Arrow " + string(hud_next_arrow_cost) + "/" + string(hud_after_next_arrow_cost) + " | Others " + string(hud_next_standard_cost) + "/" + string(hud_after_next_standard_cost)
+    top_right_y + 74,
+    "Next cost Arrow " + string(hud_next_arrow_cost) + "->" + string(hud_after_next_arrow_cost)
+      + " | Other " + string(hud_next_standard_cost) + "->" + string(hud_after_next_standard_cost)
   );
+  draw_set_font(fnt_body);
+}
+
+if (!is_intro_screen && global.game_state == GAME_STATE_RUNNING) {
+  /// @type {Real}
+  var tip_panel_gap = 16;
+  /// @type {Real}
+  var tip_panel_x = top_left_x + top_left_width + tip_panel_gap;
+  /// @type {Real}
+  var tip_panel_y = top_left_y;
+  /// @type {Real}
+  var tip_panel_width = top_right_x - tip_panel_gap - tip_panel_x;
+  /// @type {Real}
+  var tip_text_padding_x = 14;
+  /// @type {Real}
+  var tip_header_y = 10;
+  /// @type {Real}
+  var tip_body_y = 40;
+  /// @type {Real}
+  var tip_bottom_padding = 14;
+  /// @type {Real}
+  var tip_wrap_width = tip_panel_width - (tip_text_padding_x * 2);
+  /// @type {Real}
+  var tip_text_sep = 20;
+
+  // On narrower layouts, move the tip panel below the top HUD cards.
+  if (tip_panel_width < 300) {
+    tip_panel_width = clamp(gui_width - 32, 280, 620);
+    tip_panel_x = (gui_width - tip_panel_width) * 0.5;
+    tip_panel_y = top_left_y + top_left_height + 12;
+    tip_wrap_width = tip_panel_width - (tip_text_padding_x * 2);
+  }
+
+  /// @type {String}
+  var wave_tip_text = scr_get_wave_tip(global.wave_index);
+  /// @type {Real}
+  var tip_display_wave = max(1, round(global.wave_index));
+  draw_set_font(fnt_body);
+  /// @type {Real}
+  var tip_body_text_height = max(20, string_height_ext(wave_tip_text, tip_text_sep, tip_wrap_width));
+  /// @type {Real}
+  var tip_panel_height = max(84, tip_body_y + tip_body_text_height + tip_bottom_padding);
+
+  scr_draw_rounded_panel(tip_panel_x, tip_panel_y, tip_panel_width, tip_panel_height, 0.58, 14);
+
+  draw_set_halign(fa_left);
+  draw_set_valign(fa_top);
+  draw_set_font(fnt_heading);
+  draw_set_colour(c_aqua);
+  draw_text_shadow(tip_panel_x + 14, tip_panel_y + 10, "Tip");
+
+  draw_set_halign(fa_right);
+  draw_set_colour(c_ltgray);
+  draw_set_font(fnt_body);
+  draw_text_shadow(tip_panel_x + tip_panel_width - 14, tip_panel_y + 12, "Wave " + string(tip_display_wave));
+
+  draw_set_halign(fa_left);
+  draw_set_colour(c_white);
+  draw_text_shadow_ext(tip_panel_x + tip_text_padding_x, tip_panel_y + tip_body_y, wave_tip_text, tip_text_sep, tip_wrap_width);
   draw_set_font(fnt_body);
 }
 
@@ -183,7 +246,7 @@ if (!variable_global_exists("selected_panel_smooth_x")) {
 /// @type {Real}
 var coin_text_x = top_right_x + 14;
 /// @type {Real}
-var coin_text_y = top_right_y + 42;
+var coin_text_y = top_right_y + 32;
 /// @type {String}
 var coin_text = "Coins: " + string(global.player_coins);
 /// @type {Real}
@@ -420,10 +483,19 @@ draw_set_colour(c_white);
 global.coin_spend_particles = active_spend_particles;
 
 if (game_is_running() && !global.build_mode && !instance_exists(global.selected_tower_id)) {
-  scr_draw_rounded_panel(top_right_x, top_right_y + top_right_height + 10, top_right_width, 40, 0.48, 12);
+  /// @type {Real}
+  var build_hint_width = top_right_width;
+  /// @type {Real}
+  var build_hint_height = 40;
+  /// @type {Real}
+  var build_hint_x = gui_width - build_hint_width - 16;
+  /// @type {Real}
+  var build_hint_y = gui_height - build_hint_height - 16;
+
+  scr_draw_rounded_panel(build_hint_x, build_hint_y, build_hint_width, build_hint_height, 0.48, 12);
   draw_set_font(fnt_body);
   draw_set_colour(c_ltgray);
-  draw_text_shadow(top_right_x + 14, top_right_y + top_right_height + 20, "Click a base to build");
+  draw_text_shadow(build_hint_x + 14, build_hint_y + 10, "Click a base to build");
 }
 
 if (global.build_mode && instance_exists(global.build_base_id)) {

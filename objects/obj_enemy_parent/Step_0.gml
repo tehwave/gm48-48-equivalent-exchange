@@ -77,12 +77,12 @@ if (delta_x < -0.01) {
 image_angle = 0;
 
 /// @type {Real}
-var travel_step = point_distance(xprevious, yprevious, x, y);
+var travel_step = point_distance(enemy_track_last_x, enemy_track_last_y, x, y);
 if (travel_step > 0.01) {
   enemy_track_distance_accumulator += travel_step;
 
   /// @type {Real}
-  var move_angle = point_direction(xprevious, yprevious, x, y);
+  var move_angle = point_direction(enemy_track_last_x, enemy_track_last_y, x, y);
   /// @type {Real}
   var speed_factor = clamp(path_speed / max(0.001, enemy_move_speed), 0, 1);
 
@@ -91,6 +91,9 @@ if (travel_step > 0.01) {
     game_decals_stamp_track(x + enemy_spawn_offset_x, y + enemy_spawn_offset_y + 2, move_angle, speed_factor);
   }
 }
+
+enemy_track_last_x = x;
+enemy_track_last_y = y;
 
 enemy_call_steps_remaining -= 1;
 if (enemy_call_steps_remaining <= 0) {

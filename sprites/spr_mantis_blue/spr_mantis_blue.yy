@@ -23,7 +23,7 @@
   ],
   "name":"spr_mantis_blue",
   "nineSlice":null,
-  "origin":7,
+  "origin":9,
   "parent":{
     "name":"mantis",
     "path":"folders/Sprites/mantis.yy",
@@ -76,7 +76,7 @@
     "visibleRange":null,
     "volume":1.0,
     "xorigin":32,
-    "yorigin":64,
+    "yorigin":58,
   },
   "swatchColours":null,
   "swfPrecision":0.5,

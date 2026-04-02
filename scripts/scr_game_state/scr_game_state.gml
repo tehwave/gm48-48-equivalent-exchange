@@ -69,13 +69,13 @@ function scr_draw_panel_blur_backdrop(px, py, pw, ph) {
   }
 
   /// @type {Real}
-  var blur_w = global.panel_blur_surface_w;
+  var blur_active_w = blur_surface_width;
   /// @type {Real}
-  var blur_h = global.panel_blur_surface_h;
+  var blur_active_h = blur_surface_height;
   /// @type {Real}
-  var capture_scale_x = blur_w / source_width;
+  var capture_scale_x = blur_active_w / source_width;
   /// @type {Real}
-  var capture_scale_y = blur_h / source_height;
+  var capture_scale_y = blur_active_h / source_height;
 
   gpu_set_texfilter(true);
 
@@ -95,45 +95,64 @@ function scr_draw_panel_blur_backdrop(px, py, pw, ph) {
 
   for (var blur_pass = 0; blur_pass < blur_pass_count; blur_pass += 1) {
     /// @type {Real}
-    var blur_radius = (blur_pass + 1) * PANEL_BLUR_PASS_STEP;
+    var blur_radius = max(0.5, (blur_pass + 1) * PANEL_BLUR_PASS_STEP);
 
+    // Horizontal Gaussian sample pass.
     surface_set_target(surface_b);
     draw_clear_alpha(c_black, 0);
     draw_set_colour(c_white);
 
-    draw_set_alpha(0.30);
-    draw_surface_ext(surface_a, 0, 0, 1, 1, 0, c_white, 1);
+    draw_set_alpha(0.227027);
+    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, 0, 0, 1, 1, c_white, 1);
 
-    draw_set_alpha(0.12);
-    draw_surface_ext(surface_a, -blur_radius, 0, 1, 1, 0, c_white, 1);
-    draw_surface_ext(surface_a, blur_radius, 0, 1, 1, 0, c_white, 1);
-    draw_surface_ext(surface_a, 0, -blur_radius, 1, 1, 0, c_white, 1);
-    draw_surface_ext(surface_a, 0, blur_radius, 1, 1, 0, c_white, 1);
+    draw_set_alpha(0.1945946);
+    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, -blur_radius, 0, 1, 1, c_white, 1);
+    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, blur_radius, 0, 1, 1, c_white, 1);
 
-    draw_set_alpha(0.055);
-    draw_surface_ext(surface_a, -blur_radius, -blur_radius, 1, 1, 0, c_white, 1);
-    draw_surface_ext(surface_a, blur_radius, -blur_radius, 1, 1, 0, c_white, 1);
-    draw_surface_ext(surface_a, -blur_radius, blur_radius, 1, 1, 0, c_white, 1);
-    draw_surface_ext(surface_a, blur_radius, blur_radius, 1, 1, 0, c_white, 1);
+    draw_set_alpha(0.1216216);
+    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, -(blur_radius * 2), 0, 1, 1, c_white, 1);
+    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, blur_radius * 2, 0, 1, 1, c_white, 1);
 
+    draw_set_alpha(0.054054);
+    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, -(blur_radius * 3), 0, 1, 1, c_white, 1);
+    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, blur_radius * 3, 0, 1, 1, c_white, 1);
+
+    draw_set_alpha(0.016216);
+    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, -(blur_radius * 4), 0, 1, 1, c_white, 1);
+    draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, blur_radius * 4, 0, 1, 1, c_white, 1);
     surface_reset_target();
 
-    /// @type {Real}
-    var surface_swap = surface_a;
-    surface_a = surface_b;
-    surface_b = surface_swap;
+    // Vertical Gaussian sample pass.
+    surface_set_target(surface_a);
+    draw_clear_alpha(c_black, 0);
+    draw_set_colour(c_white);
+
+    draw_set_alpha(0.227027);
+    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, 0, 1, 1, c_white, 1);
+
+    draw_set_alpha(0.1945946);
+    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, -blur_radius, 1, 1, c_white, 1);
+    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, blur_radius, 1, 1, c_white, 1);
+
+    draw_set_alpha(0.1216216);
+    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, -(blur_radius * 2), 1, 1, c_white, 1);
+    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, blur_radius * 2, 1, 1, c_white, 1);
+
+    draw_set_alpha(0.054054);
+    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, -(blur_radius * 3), 1, 1, c_white, 1);
+    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, blur_radius * 3, 1, 1, c_white, 1);
+
+    draw_set_alpha(0.016216);
+    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, -(blur_radius * 4), 1, 1, c_white, 1);
+    draw_surface_part_ext(surface_b, 0, 0, blur_active_w, blur_active_h, 0, blur_radius * 4, 1, 1, c_white, 1);
+    surface_reset_target();
   }
 
   /// @type {Real}
   var blur_alpha = clamp(PANEL_BLUR_ALPHA, 0, 1);
-  /// @type {Real}
-  var blur_tint_strength = clamp(PANEL_BLUR_TINT_STRENGTH, 0, 1);
-  /// @type {Real}
-  var blur_tint_colour = merge_colour(c_white, make_color_rgb(176, 210, 255), blur_tint_strength);
-
   draw_set_alpha(blur_alpha);
-  draw_set_colour(blur_tint_colour);
-  draw_surface_ext(surface_a, px, py, pw / blur_w, ph / blur_h, 0, blur_tint_colour, 1);
+  draw_set_colour(c_white);
+  draw_surface_part_ext(surface_a, 0, 0, blur_active_w, blur_active_h, px, py, pw / blur_active_w, ph / blur_active_h, c_white, 1);
 
   gpu_set_texfilter(false);
   draw_set_alpha(1);
@@ -404,8 +423,8 @@ function scr_get_tower_description(tower_type_index, active_tower_count) {
       break;
     case 1:
       tower_description.name = "Slow";
-      tower_description.damage_type = "Single target";
-      tower_description.special = "Applies movement slow";
+      tower_description.damage_type = "Utility";
+      tower_description.special = "Applies movement slow (no damage)";
       tower_description.range = SLOW_L1_RANGE;
       tower_description.name_colour = make_color_rgb(90, 195, 255);
       tower_description.range_colour = make_color_rgb(90, 195, 255);
@@ -437,6 +456,55 @@ function scr_get_tower_description(tower_type_index, active_tower_count) {
   }
 
   return tower_description;
+}
+
+/// @description Returns the gameplay tips used by the wave tips HUD panel.
+/// @returns {Array<String>}
+function game_get_wave_tip_pool() {
+  return [
+    "Life is your build currency. Leave buffer for leaks before overbuilding.",
+    "Arrow towers are your cheapest stabilizer when pressure spikes.",
+    "Place towers where they hit longer path segments, not just first contact.",
+    "One leak hurts less than overspending life into a weak setup.",
+    "Use coins for upgrades first when life is low and placement is risky.",
+    "Build pressure rises with tower count, so each new base must earn value.",
+    "Slow plus damage towers multiply each other. Pair control with DPS.",
+    "Boss waves punish greedy life spending right before they arrive.",
+    "Refunding a bad placement is often better than forcing more life spend.",
+    "Cannon excels when enemies cluster. Cover choke points, not empty lanes.",
+    "Freeze can buy time for every tower in range, even low-level ones.",
+    "If enemies are reaching base, stabilize first and optimize later.",
+    "Upgrade the tower doing the most work, not just the one nearest you.",
+    "Keep at least one low-cost build option ready for emergency leaks.",
+    "Wave transitions are planning windows. Decide your next spend before spawn.",
+    "Do not stack identical towers blindly; diversify for control and burst.",
+    "Sell and reposition when lane pressure shifts across the map.",
+    "Flamer rewards sustained contact. Place it where enemies pass for longer.",
+    "If you cannot afford mistakes, avoid speculative placements.",
+    "Boss prep rule: enter with life buffer and at least one strong damage lane.",
+    "A tower that never shoots is dead life. Prioritize uptime over theory.",
+    "When in doubt, buy time: control effects reduce panic spending.",
+    "Coins recover through kills; life recovery is limited, spend it carefully.",
+    "Equivalent Exchange: every power gain needs a visible, intentional cost."
+  ];
+}
+
+/// @description Resolves a deterministic wave tip by sequentially cycling through the tip pool.
+/// @param {Real} wave_index
+/// @returns {String}
+function scr_get_wave_tip(wave_index) {
+  /// @type {Array<String>}
+  var tip_pool = game_get_wave_tip_pool();
+  /// @type {Real}
+  var tip_count = array_length(tip_pool);
+  if (tip_count <= 0) return "Protect your life total and spend only with purpose.";
+
+  /// @type {Real}
+  var resolved_wave_index = max(1, round(wave_index));
+  /// @type {Real}
+  var tip_index = (resolved_wave_index - 1) mod tip_count;
+
+  return tip_pool[tip_index];
 }
 
 /// @param {Real} amount
@@ -1103,7 +1171,7 @@ function game_decals_draw_blob(mark, draw_alpha, outer_colour, inner_colour, lob
   /// @type {Real}
   var seed = variable_struct_exists(mark, "seed") ? mark.seed : ((mark.x * 17) + (mark.y * 11) + (mark.size * 9));
 
-  draw_set_alpha(clamp(draw_alpha * 1.08, 0, 1));
+  draw_set_alpha(clamp(draw_alpha * 0.92, 0, 1));
   draw_set_colour(outer_colour);
   draw_circle(mark.x, mark.y, max(1.2, mark.size * 0.62), false);
 
@@ -1123,7 +1191,7 @@ function game_decals_draw_blob(mark, draw_alpha, outer_colour, inner_colour, lob
     );
   }
 
-  draw_set_alpha(clamp(draw_alpha * 0.88, 0, 1));
+  draw_set_alpha(clamp(draw_alpha * 0.72, 0, 1));
   draw_set_colour(inner_colour);
 
   for (var j = 0; j < max(3, floor(lobe_count * 0.82)); j += 1) {
@@ -1152,9 +1220,15 @@ function game_decals_draw_track(mark, draw_alpha) {
   /// @type {Real}
   var pair_offset = DECAL_TRACK_PAIR_OFFSET * mark.size;
   /// @type {Real}
-  var track_colour = make_color_rgb(32, 27, 24);
+  var track_colour = make_color_rgb(98, 72, 48);
+  /// @type {Real}
+  var track_inner_colour = make_color_rgb(138, 106, 74);
+  /// @type {Real}
+  var wheel_spacing = mark.size * 2.1;
+  /// @type {Array<Real>}
+  var wheel_offsets = [-1.5, -0.5, 0.5, 1.5];
 
-  draw_set_alpha(clamp(draw_alpha * 1.18, 0, 1));
+  draw_set_alpha(clamp(draw_alpha * 0.96, 0, 1));
   draw_set_colour(track_colour);
 
   for (var side = 0; side < 2; side += 1) {
@@ -1167,20 +1241,48 @@ function game_decals_draw_track(mark, draw_alpha) {
     /// @type {Real}
     var side_y = mark.y + lengthdir_y(pair_offset, mark.angle + (90 * side_sign));
 
-    for (var seg = 0; seg < 4; seg += 1) {
+    for (var wheel = 0; wheel < array_length(wheel_offsets); wheel += 1) {
       /// @type {Real}
-      var seg_dist = (seg - 1.5) * (mark.size * 1.65);
+      var seg_dist = wheel_offsets[wheel] * wheel_spacing;
       /// @type {Real}
-      var seg_jitter = (game_decals_noise(seed, 240 + side_seed_offset + seg) * 2 - 1) * (mark.size * 0.42);
+      var seg_jitter = (game_decals_noise(seed, 240 + side_seed_offset + wheel) * 2 - 1) * (mark.size * 0.32);
       /// @type {Real}
-      var seg_radius = max(1.1, mark.size * (0.78 + (game_decals_noise(seed, 280 + side_seed_offset + seg) * 0.44)));
+      var wheel_x = side_x + lengthdir_x(seg_dist, mark.angle) + lengthdir_x(seg_jitter, mark.angle + 90);
+      /// @type {Real}
+      var wheel_y = side_y + lengthdir_y(seg_dist, mark.angle) + lengthdir_y(seg_jitter, mark.angle + 90);
 
-      draw_circle(
-        side_x + lengthdir_x(seg_dist, mark.angle) + lengthdir_x(seg_jitter, mark.angle + 90),
-        side_y + lengthdir_y(seg_dist, mark.angle) + lengthdir_y(seg_jitter, mark.angle + 90),
-        seg_radius,
-        false
+      /// @type {Real}
+      var line_len = max(2.4, mark.size * (2.2 + (game_decals_noise(seed, 280 + side_seed_offset + wheel) * 0.8)));
+      /// @type {Real}
+      var half_len = line_len * 0.5;
+      /// @type {Real}
+      var line_x1 = wheel_x + lengthdir_x(-half_len, mark.angle);
+      /// @type {Real}
+      var line_y1 = wheel_y + lengthdir_y(-half_len, mark.angle);
+      /// @type {Real}
+      var line_x2 = wheel_x + lengthdir_x(half_len, mark.angle);
+      /// @type {Real}
+      var line_y2 = wheel_y + lengthdir_y(half_len, mark.angle);
+
+      // Per-wheel tread segment oriented to movement direction.
+      draw_line(line_x1, line_y1, line_x2, line_y2);
+      draw_line(
+        line_x1 + lengthdir_x(0.9, mark.angle + 90),
+        line_y1 + lengthdir_y(0.9, mark.angle + 90),
+        line_x2 + lengthdir_x(0.9, mark.angle + 90),
+        line_y2 + lengthdir_y(0.9, mark.angle + 90)
       );
+
+      draw_set_alpha(clamp(draw_alpha * 0.48, 0, 1));
+      draw_set_colour(track_inner_colour);
+      draw_line(
+        wheel_x + lengthdir_x(-(half_len * 0.72), mark.angle),
+        wheel_y + lengthdir_y(-(half_len * 0.72), mark.angle),
+        wheel_x + lengthdir_x((half_len * 0.72), mark.angle),
+        wheel_y + lengthdir_y((half_len * 0.72), mark.angle)
+      );
+      draw_set_alpha(clamp(draw_alpha * 0.96, 0, 1));
+      draw_set_colour(track_colour);
     }
   }
 }
