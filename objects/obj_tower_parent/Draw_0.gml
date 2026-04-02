@@ -263,10 +263,14 @@ if (should_draw_attack_vfx && !draw_attack_vfx_above_tower) {
   /// @type {Real}
   var frame_index = clamp(frame_count - tower_attack_vfx_steps_remaining, 0, frame_count - 1);
   if (tower_is_flamer) {
-    // Keep flamer flame motion continuous instead of restarting each attack tick.
+    // Flamer should restart on fire, but skip startup frames by starting mid-animation.
     /// @type {Real}
-    var flame_phase_seed = floor((x * 0.13) + (y * 0.17));
-    frame_index = (floor(current_time * 0.03) + flame_phase_seed) mod frame_count;
+    var flamer_start_index = floor((frame_count - 1) * tower_attack_vfx_start_fraction);
+    /// @type {Real}
+    var flamer_span = max(1, frame_count - flamer_start_index);
+    /// @type {Real}
+    var flamer_progress = clamp((frame_count - tower_attack_vfx_steps_remaining) / frame_count, 0, 1);
+    frame_index = clamp(flamer_start_index + floor(flamer_progress * flamer_span), 0, frame_count - 1);
   }
   /// @type {Real}
   var vfx_angle = tower_attack_vfx_angle + tower_attack_vfx_angle_offset;
@@ -292,10 +296,14 @@ if (should_draw_attack_vfx && draw_attack_vfx_above_tower) {
   /// @type {Real}
   var frame_index_above = clamp(frame_count_above - tower_attack_vfx_steps_remaining, 0, frame_count_above - 1);
   if (tower_is_flamer) {
-    // Keep flamer flame motion continuous instead of restarting each attack tick.
+    // Flamer should restart on fire, but skip startup frames by starting mid-animation.
     /// @type {Real}
-    var flame_phase_seed_above = floor((x * 0.13) + (y * 0.17));
-    frame_index_above = (floor(current_time * 0.03) + flame_phase_seed_above) mod frame_count_above;
+    var flamer_start_index_above = floor((frame_count_above - 1) * tower_attack_vfx_start_fraction);
+    /// @type {Real}
+    var flamer_span_above = max(1, frame_count_above - flamer_start_index_above);
+    /// @type {Real}
+    var flamer_progress_above = clamp((frame_count_above - tower_attack_vfx_steps_remaining) / frame_count_above, 0, 1);
+    frame_index_above = clamp(flamer_start_index_above + floor(flamer_progress_above * flamer_span_above), 0, frame_count_above - 1);
   }
   /// @type {Real}
   var vfx_angle_above = tower_attack_vfx_angle + tower_attack_vfx_angle_offset;
