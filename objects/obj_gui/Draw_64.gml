@@ -43,12 +43,12 @@ if (display_wave_index < TOTAL_WAVES) {
 var boss_timing_text = "No remaining boss waves";
 if (display_wave_index > 0 && scr_wave_is_boss(display_wave_index)) {
   if ((display_wave_index + BOSS_WAVE_INTERVAL) <= TOTAL_WAVES) {
-    boss_timing_text = "Boss: NOW | Next Wave " + string(display_wave_index + BOSS_WAVE_INTERVAL);
+    boss_timing_text = "Boss: NOW | Next Wave #" + string(display_wave_index + BOSS_WAVE_INTERVAL);
   } else {
     boss_timing_text = "Boss: NOW | Final boss";
   }
 } else if (next_boss_wave > 0) {
-  boss_timing_text = "Boss: Wave " + string(next_boss_wave) + " (in " + string(next_boss_wave - display_wave_index) + " waves)";
+  boss_timing_text = "Boss: Wave #" + string(next_boss_wave) + " (in " + string(next_boss_wave - display_wave_index) + " waves)";
 }
 
 if (!is_intro_screen) {
@@ -62,7 +62,7 @@ if (!is_intro_screen) {
   var enemies_text = "Alive now: " + string(global.enemies_alive);
   /// @type {String}
   var next_wave_text = preview_wave_exists
-    ? "Next wave: Wave " + string(preview_wave_index) + ": " + string(preview_enemy_count) + " enemies"
+    ? "Next wave: Wave #" + string(preview_wave_index) + " with " + string(preview_enemy_count) + " enemies"
     : "Next wave: End of run";
   draw_set_font(fnt_body);
   draw_set_colour(c_white);

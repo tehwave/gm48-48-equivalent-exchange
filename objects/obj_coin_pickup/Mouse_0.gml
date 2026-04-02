@@ -46,15 +46,11 @@ coin_collect_launch_dir_y = -1;
 coin_collect_launch_distance = random_range(28, 54);
 coin_collect_launch_phase_t = random_range(0.14, 0.24);
 
-/// Match the coin text anchor used in obj_gui.
+/// Home to the top-right HUD corner instead of the coin text position.
 /// @type {Real}
-var top_right_width = 224;
-/// @type {Real}
-var top_right_x = gui_width - top_right_width - 16;
-/// @type {Real}
-var top_right_y = 16;
-coin_collect_target_gui_x = top_right_x + 14;
-coin_collect_target_gui_y = top_right_y + 42;
+var hud_corner_margin = 16;
+coin_collect_target_gui_x = gui_width - hud_corner_margin;
+coin_collect_target_gui_y = hud_corner_margin;
 
 if (!variable_global_exists("coin_collect_path_count")) {
 	global.coin_collect_path_count = 6;
