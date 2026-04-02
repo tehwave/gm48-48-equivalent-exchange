@@ -8,7 +8,7 @@ var target_level = tower_level + 1;
 /// @type {Real}
 var upgrade_cost = scr_tower_upgrade_cost(object_index, target_level);
 
-if (!game_try_spend_coins(upgrade_cost)) exit;
+if (!game_try_spend_coins(upgrade_cost, x, y)) exit;
 
 tower_level = target_level;
 scr_tower_apply_level_stats(id, object_index, tower_level);

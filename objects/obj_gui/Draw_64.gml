@@ -57,25 +57,14 @@ if (!variable_global_exists("coin_hud_pop_steps")) {
   global.coin_hud_pop_steps = 0;
 }
 
-if (!variable_global_exists("coin_spend_vfx_pending")) {
-  global.coin_spend_vfx_pending = 0;
-}
-
 if (!variable_global_exists("coin_spend_particles")) {
   /// @type {Array<Struct>}
   global.coin_spend_particles = [];
 }
 
-if (!variable_global_exists("coin_spend_vfx_emit_steps_remaining")) {
-  global.coin_spend_vfx_emit_steps_remaining = 0;
-}
-
-if (!variable_global_exists("coin_spend_vfx_emit_interval_steps")) {
-  global.coin_spend_vfx_emit_interval_steps = 1;
-}
-
-if (!variable_global_exists("coin_spend_vfx_emit_tick")) {
-  global.coin_spend_vfx_emit_tick = 0;
+if (!variable_global_exists("coin_spend_vfx_emitters")) {
+  /// @type {Array<Struct>}
+  global.coin_spend_vfx_emitters = [];
 }
 
 /// @type {Real}
@@ -104,40 +93,67 @@ if (global.coin_hud_pop_steps > 0) {
   global.coin_hud_pop_steps -= 1;
 }
 
-if (global.coin_spend_vfx_pending > 0 && global.coin_spend_vfx_emit_steps_remaining <= 0) {
-  /// @type {Real}
-  var emit_span_steps = max(1, round(room_speed * COIN_SPEND_UI_EMIT_SPAN_SECONDS));
-  global.coin_spend_vfx_emit_steps_remaining = emit_span_steps;
-  global.coin_spend_vfx_emit_interval_steps = max(1, floor(emit_span_steps / max(1, global.coin_spend_vfx_pending)));
-  global.coin_spend_vfx_emit_tick = 0;
-}
+/// @type {Array<Struct>}
+var active_spend_emitters = [];
+/// @type {Real}
+var spend_emitter_count = array_length(global.coin_spend_vfx_emitters);
+for (var emitter_index = 0; emitter_index < spend_emitter_count; emitter_index += 1) {
+  /// @type {Struct}
+  var spend_emitter_state = global.coin_spend_vfx_emitters[emitter_index];
 
-if (global.coin_spend_vfx_pending > 0) {
-  if (global.coin_spend_vfx_emit_steps_remaining > 0) {
-    global.coin_spend_vfx_emit_steps_remaining -= 1;
+  if (spend_emitter_state.emit_steps_remaining > 0) {
+    spend_emitter_state.emit_steps_remaining -= 1;
   }
 
-  global.coin_spend_vfx_emit_tick -= 1;
-  if (global.coin_spend_vfx_emit_tick <= 0) {
-    /// @type {Struct}
-    var spend_particle = {
-      x : coin_text_x + 68,
-      y : coin_text_y + 7,
-      vy : random_range(COIN_SPEND_UI_PARTICLE_START_SPEED_MIN, COIN_SPEND_UI_PARTICLE_START_SPEED_MAX),
-      life : COIN_SPEND_UI_PARTICLE_LIFE_STEPS,
-      max_life : COIN_SPEND_UI_PARTICLE_LIFE_STEPS
-    };
+  if (spend_emitter_state.pending > 0) {
+    spend_emitter_state.emit_tick -= 1;
+    if (spend_emitter_state.emit_tick <= 0) {
+      /// @type {Struct}
+      var spend_particle = {
+        world_x : spend_emitter_state.world_x,
+        world_y : spend_emitter_state.world_y,
+        vy : random_range(COIN_SPEND_UI_PARTICLE_START_SPEED_MIN, COIN_SPEND_UI_PARTICLE_START_SPEED_MAX),
+        life : COIN_SPEND_UI_PARTICLE_LIFE_STEPS,
+        max_life : COIN_SPEND_UI_PARTICLE_LIFE_STEPS
+      };
 
-    array_push(global.coin_spend_particles, spend_particle);
-    global.coin_spend_vfx_pending = max(0, global.coin_spend_vfx_pending - 1);
-    global.coin_spend_vfx_emit_tick = max(1, global.coin_spend_vfx_emit_interval_steps);
+      array_push(global.coin_spend_particles, spend_particle);
+      spend_emitter_state.pending -= 1;
+      spend_emitter_state.emit_tick = max(1, spend_emitter_state.emit_interval_steps);
+    }
+  }
+
+  if (spend_emitter_state.pending > 0 || spend_emitter_state.emit_steps_remaining > 0) {
+    array_push(active_spend_emitters, spend_emitter_state);
   }
 }
+
+global.coin_spend_vfx_emitters = active_spend_emitters;
 
 /// @type {Array<Struct>}
 var active_spend_particles = [];
 /// @type {Real}
 var spend_particle_count = array_length(global.coin_spend_particles);
+
+/// @type {Real}
+var spend_camera_id = view_camera[0];
+/// @type {Real}
+var spend_view_x = (spend_camera_id != -1) ? camera_get_view_x(spend_camera_id) : 0;
+/// @type {Real}
+var spend_view_y = (spend_camera_id != -1) ? camera_get_view_y(spend_camera_id) : 0;
+/// @type {Real}
+var spend_view_w = (spend_camera_id != -1) ? camera_get_view_width(spend_camera_id) : room_width;
+/// @type {Real}
+var spend_view_h = (spend_camera_id != -1) ? camera_get_view_height(spend_camera_id) : room_height;
+/// @type {Real}
+var spend_safe_view_w = max(1, spend_view_w);
+/// @type {Real}
+var spend_safe_view_h = max(1, spend_view_h);
+/// @type {Real}
+var spend_safe_gui_w = max(1, gui_width);
+/// @type {Real}
+var spend_safe_gui_h = max(1, gui_height);
+
 for (var particle_index = 0; particle_index < spend_particle_count; particle_index += 1) {
   /// @type {Struct}
   var spend_particle_state = global.coin_spend_particles[particle_index];
@@ -145,7 +161,7 @@ for (var particle_index = 0; particle_index < spend_particle_count; particle_ind
 
   if (spend_particle_state.life > 0) {
     spend_particle_state.vy += COIN_SPEND_UI_PARTICLE_GRAVITY;
-    spend_particle_state.y += spend_particle_state.vy;
+    spend_particle_state.world_y += spend_particle_state.vy;
 
     /// @type {Real}
     var spend_life_t = spend_particle_state.life / max(1, spend_particle_state.max_life);
@@ -153,14 +169,18 @@ for (var particle_index = 0; particle_index < spend_particle_count; particle_ind
     var spend_fade_t = clamp((spend_life_t - 0.2) / 0.8, 0, 1);
     /// @type {Real}
     var spend_alpha = spend_fade_t;
+    /// @type {Real}
+    var spend_gui_x = ((spend_particle_state.world_x - spend_view_x) / spend_safe_view_w) * spend_safe_gui_w;
+    /// @type {Real}
+    var spend_gui_y = ((spend_particle_state.world_y - spend_view_y) / spend_safe_view_h) * spend_safe_gui_h;
 
     draw_set_alpha(spend_alpha);
     draw_set_colour(c_white);
     draw_sprite_ext(
       spr_coin,
       0,
-      spend_particle_state.x,
-      spend_particle_state.y,
+      spend_gui_x,
+      spend_gui_y,
       COIN_SPEND_UI_PARTICLE_SCALE,
       COIN_SPEND_UI_PARTICLE_SCALE,
       0,

@@ -43,6 +43,14 @@ coin_collect_path_wobble_freq = 1;
 /// @type {Real}
 coin_collect_path_ease_power = 3;
 /// @type {Real}
+coin_collect_launch_dir_x = 0;
+/// @type {Real}
+coin_collect_launch_dir_y = 0;
+/// @type {Real}
+coin_collect_launch_distance = 34;
+/// @type {Real}
+coin_collect_launch_phase_t = 0.18;
+/// @type {Real}
 coin_collect_draw_x = x;
 /// @type {Real}
 coin_collect_draw_y = y;

@@ -44,7 +44,7 @@ if (coin_collected) {
     collect_scale,
     collect_scale,
     image_angle,
-    c_yellow,
+    c_white,
     burst_alpha
   );
 

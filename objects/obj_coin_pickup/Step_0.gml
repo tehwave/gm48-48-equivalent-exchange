@@ -7,15 +7,41 @@ if (coin_collected) {
   /// @type {Real}
   var collect_t = clamp(coin_collect_elapsed_steps / max(1, coin_collect_vfx_total_steps), 0, 1);
   /// @type {Real}
-  var ease_out_t = 1 - power(1 - collect_t, coin_collect_path_ease_power);
+  var launch_phase_t = clamp(coin_collect_launch_phase_t, 0.05, 0.45);
+  /// @type {Real}
+  var launch_t = clamp(collect_t / launch_phase_t, 0, 1);
+  /// @type {Real}
+  var launch_ease_t = 1 - power(1 - launch_t, 2.4);
+  /// @type {Real}
+  var launch_origin_x = coin_collect_start_gui_x;
+  /// @type {Real}
+  var launch_origin_y = coin_collect_start_gui_y;
+  /// @type {Real}
+  var launch_end_x = launch_origin_x + (coin_collect_launch_dir_x * coin_collect_launch_distance);
+  /// @type {Real}
+  var launch_end_y = launch_origin_y + (coin_collect_launch_dir_y * coin_collect_launch_distance);
 
   /// @type {Real}
-  var gui_x = lerp(coin_collect_start_gui_x, coin_collect_target_gui_x, ease_out_t);
-  gui_x += sin(collect_t * pi) * coin_collect_path_lateral;
-  gui_x += sin((collect_t * pi) * coin_collect_path_wobble_freq) * coin_collect_path_wobble;
+  var fly_t = clamp((collect_t - launch_phase_t) / max(0.001, 1 - launch_phase_t), 0, 1);
   /// @type {Real}
-  var gui_y = lerp(coin_collect_start_gui_y, coin_collect_target_gui_y, ease_out_t);
-  gui_y -= sin(collect_t * pi) * coin_collect_arc_height * coin_collect_path_arc_mult;
+  var ease_out_t = 1 - power(1 - fly_t, coin_collect_path_ease_power);
+
+  /// @type {Real}
+  var gui_x = launch_end_x;
+  /// @type {Real}
+  var gui_y = launch_end_y;
+
+  if (collect_t < launch_phase_t) {
+    gui_x = lerp(launch_origin_x, launch_end_x, launch_ease_t);
+    gui_y = lerp(launch_origin_y, launch_end_y, launch_ease_t);
+  } else {
+    gui_x = lerp(launch_end_x, coin_collect_target_gui_x, ease_out_t);
+    gui_x += sin(fly_t * pi) * coin_collect_path_lateral;
+    gui_x += sin((fly_t * pi) * coin_collect_path_wobble_freq) * coin_collect_path_wobble;
+
+    gui_y = lerp(launch_end_y, coin_collect_target_gui_y, ease_out_t);
+    gui_y -= sin(fly_t * pi) * coin_collect_arc_height * coin_collect_path_arc_mult;
+  }
 
   /// @type {Real}
   var camera_id_collect = view_camera[0];

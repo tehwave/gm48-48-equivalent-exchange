@@ -28,8 +28,8 @@ function scr_draw_rounded_panel(px, py, pw, ph, bg_alpha, corner_radius) {
 /// @param {Real} shadow_offset_y
 /// @returns {Void}
 function draw_text_shadow(x, y, text, shadow_offset_x, shadow_offset_y) {
-  if (argument_count < 4) shadow_offset_x = 1;
-  if (argument_count < 5) shadow_offset_y = 1;
+  if (is_undefined(shadow_offset_x)) shadow_offset_x = 1;
+  if (is_undefined(shadow_offset_y)) shadow_offset_y = 1;
 
   /// @type {Real}
   var main_colour = draw_get_colour();
@@ -50,8 +50,8 @@ function draw_text_shadow(x, y, text, shadow_offset_x, shadow_offset_y) {
 /// @param {Real} shadow_offset_y
 /// @returns {Void}
 function draw_text_shadow_ext(x, y, text, sep, width, shadow_offset_x, shadow_offset_y) {
-  if (argument_count < 6) shadow_offset_x = 1;
-  if (argument_count < 7) shadow_offset_y = 1;
+  if (is_undefined(shadow_offset_x)) shadow_offset_x = 1;
+  if (is_undefined(shadow_offset_y)) shadow_offset_y = 1;
 
   /// @type {Real}
   var main_colour = draw_get_colour();
@@ -133,21 +133,49 @@ function game_try_spend_hp(amount) {
 }
 
 /// @param {Real} amount
+/// @param {Real} source_x
+/// @param {Real} source_y
 /// @returns {Bool}
-function game_try_spend_coins(amount) {
+function game_try_spend_coins(amount, source_x, source_y) {
   if (!game_is_running()) return false;
   if (amount <= 0) return true;
   if (global.player_coins < amount) return false;
 
   global.player_coins -= amount;
 
-  if (!variable_global_exists("coin_spend_vfx_pending")) {
-    global.coin_spend_vfx_pending = 0;
+  if (!variable_global_exists("coin_spend_vfx_emitters")) {
+    /// @type {Array<Struct>}
+    global.coin_spend_vfx_emitters = [];
   }
 
   /// @type {Real}
   var spend_vfx_budget = clamp(round(amount), 1, 36);
-  global.coin_spend_vfx_pending += spend_vfx_budget;
+  /// @type {Real}
+  var emit_span_steps = max(1, round(room_speed * COIN_SPEND_UI_EMIT_SPAN_SECONDS));
+  /// @type {Real}
+  var emit_interval_steps = max(1, floor(emit_span_steps / max(1, spend_vfx_budget)));
+
+  /// @type {Real}
+  var spend_source_x = argument_count >= 2 ? source_x : 0;
+  /// @type {Real}
+  var spend_source_y = argument_count >= 3 ? source_y : 0;
+
+  if (argument_count < 3 && instance_exists(global.selected_tower_id)) {
+    spend_source_x = global.selected_tower_id.x;
+    spend_source_y = global.selected_tower_id.y;
+  }
+
+  /// @type {Struct}
+  var spend_emitter = {
+    world_x : spend_source_x,
+    world_y : spend_source_y - 10,
+    pending : spend_vfx_budget,
+    emit_steps_remaining : emit_span_steps,
+    emit_interval_steps : emit_interval_steps,
+    emit_tick : 0
+  };
+
+  array_push(global.coin_spend_vfx_emitters, spend_emitter);
 
   return true;
 }

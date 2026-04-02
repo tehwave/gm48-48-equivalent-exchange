@@ -40,6 +40,14 @@ var safe_gui_h = max(1, gui_height);
 coin_collect_start_gui_x = ((x - view_x) / safe_view_w) * safe_gui_w;
 coin_collect_start_gui_y = ((y - view_y) / safe_view_h) * safe_gui_h;
 
+/// Start with a quick outward burst in a random direction before homing.
+/// @type {Real}
+var launch_angle = random_range(0, 359);
+coin_collect_launch_dir_x = lengthdir_x(1, launch_angle);
+coin_collect_launch_dir_y = lengthdir_y(1, launch_angle);
+coin_collect_launch_distance = random_range(28, 54);
+coin_collect_launch_phase_t = random_range(0.14, 0.24);
+
 /// Match the coin text anchor used in obj_gui.
 /// @type {Real}
 var top_right_width = 224;
@@ -65,14 +73,14 @@ if (!variable_global_exists("coin_collect_path_last_index")) {
 /// @type {Real}
 var path_count = max(1, round(global.coin_collect_path_count));
 /// @type {Real}
-var path_index = global.coin_collect_path_next_index mod path_count;
-if (path_index == global.coin_collect_path_last_index && path_count > 1) {
-	path_index = (path_index + 1) mod path_count;
+var collect_path_index_local = global.coin_collect_path_next_index mod path_count;
+if (collect_path_index_local == global.coin_collect_path_last_index && path_count > 1) {
+	collect_path_index_local = (collect_path_index_local + 1) mod path_count;
 }
 
-coin_collect_path_index = path_index;
-global.coin_collect_path_last_index = path_index;
-global.coin_collect_path_next_index = (path_index + 1) mod path_count;
+coin_collect_path_index = collect_path_index_local;
+global.coin_collect_path_last_index = collect_path_index_local;
+global.coin_collect_path_next_index = (collect_path_index_local + 1) mod path_count;
 
 switch (coin_collect_path_index) {
 	case 0:
