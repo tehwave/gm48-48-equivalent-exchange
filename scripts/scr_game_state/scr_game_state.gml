@@ -126,10 +126,14 @@ function scr_draw_panel_blur_backdrop(px, py, pw, ph) {
 
   /// @type {Real}
   var blur_alpha = clamp(PANEL_BLUR_ALPHA, 0, 1);
+  /// @type {Real}
+  var blur_tint_strength = clamp(PANEL_BLUR_TINT_STRENGTH, 0, 1);
+  /// @type {Real}
+  var blur_tint_colour = merge_colour(c_white, make_color_rgb(176, 210, 255), blur_tint_strength);
 
   draw_set_alpha(blur_alpha);
-  draw_set_colour(c_white);
-  draw_surface_ext(surface_a, px, py, pw / blur_w, ph / blur_h, 0, c_white, 1);
+  draw_set_colour(blur_tint_colour);
+  draw_surface_ext(surface_a, px, py, pw / blur_w, ph / blur_h, 0, blur_tint_colour, 1);
 
   gpu_set_texfilter(false);
   draw_set_alpha(1);
@@ -145,9 +149,21 @@ function scr_draw_panel_blur_backdrop(px, py, pw, ph) {
 /// @returns {Void}
 function scr_draw_rounded_panel(px, py, pw, ph, bg_alpha, corner_radius) {
   scr_draw_panel_blur_backdrop(px, py, pw, ph);
-  draw_set_alpha(clamp(bg_alpha, 0, 1));
+  draw_set_alpha(clamp(bg_alpha * PANEL_BG_ALPHA_MULTIPLIER, 0, 1));
   draw_set_colour(c_black);
   draw_roundrect_ext(px, py, px + pw, py + ph, corner_radius, corner_radius, false);
+
+  /// Add a subtle glass highlight at the top edge.
+  /// @type {Real}
+  var panel_highlight_alpha = clamp(PANEL_TOP_HIGHLIGHT_ALPHA, 0, 1);
+  if (panel_highlight_alpha > 0) {
+    /// @type {Real}
+    var panel_line_margin = max(2, corner_radius * 0.45);
+    draw_set_alpha(panel_highlight_alpha);
+    draw_set_colour(make_color_rgb(226, 236, 255));
+    draw_line(px + panel_line_margin, py + 1, px + pw - panel_line_margin, py + 1);
+  }
+
   draw_set_alpha(1);
   draw_set_colour(c_white);
 }

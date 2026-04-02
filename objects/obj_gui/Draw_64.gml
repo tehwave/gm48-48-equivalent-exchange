@@ -7,6 +7,7 @@ var gui_height = display_get_gui_height();
 
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
+draw_set_font(fnt_body);
 
 /// @type {Real}
 var top_left_x = 16;
@@ -19,17 +20,21 @@ var top_left_height = 86;
 
 scr_draw_rounded_panel(top_left_x, top_left_y, top_left_width, top_left_height, 0.58, 14);
 
+draw_set_font(fnt_heading);
 draw_set_colour(c_white);
 draw_text_shadow(top_left_x + 14, top_left_y + 10, "Wave " + string(global.wave_index) + "/" + string(TOTAL_WAVES));
 
 /// @type {String}
 var enemies_text = "Enemies: " + string(global.enemies_alive);
+draw_set_font(fnt_body);
 draw_set_colour(c_ltgray);
 draw_text_shadow(top_left_x + 14, top_left_y + 40, enemies_text);
 
 if (global.wave_index > 0 && scr_wave_is_boss(global.wave_index)) {
+  draw_set_font(fnt_heading);
   draw_set_colour(c_orange);
   draw_text_shadow(top_left_x + top_left_width - 120, top_left_y + 10, "BOSS WAVE");
+  draw_set_font(fnt_body);
 }
 
 /// @type {Real}
@@ -48,10 +53,12 @@ var life_text_x = top_right_x + 14;
 /// @type {Real}
 var life_text_y = top_right_y + 10;
 
+draw_set_font(fnt_heading);
 draw_set_colour(c_black);
 draw_text_shadow(life_text_x + 1, life_text_y + 1, "Life: " + string(global.player_hp));
 draw_set_colour(make_color_rgb(255, 134, 198));
 draw_text_shadow(life_text_x, life_text_y, "Life: " + string(global.player_hp));
+draw_set_font(fnt_body);
 
 if (!variable_global_exists("coin_hud_pop_steps")) {
   global.coin_hud_pop_steps = 0;
@@ -87,6 +94,7 @@ var pop_scale = 1 + (0.14 * sin(pop_t * pi));
 /// @type {Real}
 var pop_alpha = 1 - (0.18 * pop_t);
 
+draw_set_font(fnt_body);
 draw_set_colour(c_black);
 draw_text_transformed(coin_text_x + 1, coin_text_y + 1, coin_text, pop_scale, pop_scale, 0);
 draw_set_colour(c_yellow);
@@ -122,6 +130,7 @@ var value_fx_safe_gui_w = max(1, gui_width);
 /// @type {Real}
 var value_fx_safe_gui_h = max(1, gui_height);
 
+draw_set_font(fnt_body);
 draw_set_halign(fa_center);
 draw_set_valign(fa_middle);
 for (var value_fx_index = 0; value_fx_index < value_fx_popup_count; value_fx_index += 1) {
@@ -309,6 +318,7 @@ global.coin_spend_particles = active_spend_particles;
 
 if (game_is_running() && !global.build_mode && !instance_exists(global.selected_tower_id)) {
   scr_draw_rounded_panel(top_right_x, top_right_y + top_right_height + 10, top_right_width, 40, 0.48, 12);
+  draw_set_font(fnt_body);
   draw_set_colour(c_ltgray);
   draw_text_shadow(top_right_x + 14, top_right_y + top_right_height + 20, "Click a base to build");
 }
@@ -336,11 +346,13 @@ if (global.build_mode && instance_exists(global.build_base_id)) {
 
   scr_draw_rounded_panel(build_panel_x, build_panel_y, build_panel_width, build_panel_height, 0.86, 14);
 
+  draw_set_font(fnt_heading);
   draw_set_colour(c_black);
   draw_text_shadow(build_panel_x + 13, build_panel_y + 11, "Build Tower");
   draw_set_colour(c_white);
   draw_text_shadow(build_panel_x + 12, build_panel_y + 10, "Build Tower");
 
+  draw_set_font(fnt_body);
   draw_set_colour(c_black);
   draw_text_shadow(build_panel_x + 13, build_panel_y + 35, "Select: [Q]/[E] or [1]-[5]");
   draw_set_colour(c_ltgray);
@@ -388,10 +400,15 @@ if (global.build_mode && instance_exists(global.build_base_id)) {
     var row_prefix = tower_selected ? "> " : "  ";
 
     if (tower_selected) {
-      scr_draw_rounded_panel(build_panel_x + 8, row_y - 8, build_panel_width - 16, 50, 0.52, 8);
+      scr_draw_rounded_panel(build_panel_x + 8, row_y - 8, build_panel_width - 16, 50, PANEL_SELECTED_ROW_BG_ALPHA, 8);
       draw_set_colour(c_white);
-      draw_set_alpha(0.8);
+      draw_set_alpha(PANEL_SELECTED_ROW_BORDER_ALPHA);
       draw_roundrect_ext(build_panel_x + 8, row_y - 8, build_panel_x + build_panel_width - 8, row_y + 42, 8, 8, true);
+
+      draw_set_colour(c_black);
+      draw_set_alpha(PANEL_SELECTED_ROW_INNER_SHADOW_ALPHA);
+      draw_roundrect_ext(build_panel_x + 10, row_y - 6, build_panel_x + build_panel_width - 10, row_y + 40, 6, 6, true);
+
       draw_set_alpha(1);
     }
 
@@ -491,8 +508,10 @@ if (!global.build_mode && instance_exists(global.selected_tower_id)) {
   /// @type {Bool}
   var selected_next_level_affordable = (selected_upgrade_cost_for_pips > 0 && global.player_coins >= selected_upgrade_cost_for_pips);
 
+  draw_set_font(fnt_heading);
   draw_set_colour(c_white);
   draw_text_shadow(selected_panel_x + panel_inner_pad, selected_panel_y + 12, selected_description.name);
+  draw_set_font(fnt_body);
   draw_set_colour(c_ltgray);
   draw_text_shadow(selected_panel_x + panel_inner_pad, selected_panel_y + 12 + panel_row_gap, "Lvl " + string(selected_level) + " / " + string(TOWER_MAX_LEVEL));
 
@@ -576,10 +595,12 @@ if (global.boss_banner_timer_steps > 0) {
 
   draw_set_halign(fa_center);
   draw_set_valign(fa_middle);
+  draw_set_font(fnt_heading);
   draw_set_colour(c_black);
   draw_text_transformed(boss_center_x + 4, boss_center_y + 4, "BOSS WAVE", boss_pulse * 1.6, boss_pulse * 1.6, 0);
   draw_set_colour(c_orange);
   draw_text_transformed(boss_center_x, boss_center_y, "BOSS WAVE", boss_pulse * 1.6, boss_pulse * 1.6, 0);
+  draw_set_font(fnt_body);
 }
 
 if (global.game_state == GAME_STATE_INTRO) {
@@ -604,6 +625,7 @@ if (global.game_state == GAME_STATE_INTRO) {
 
   draw_set_halign(fa_center);
   draw_set_valign(fa_middle);
+  draw_set_font(fnt_heading);
   draw_set_colour(c_white);
   draw_text_shadow(
     intro_center_x,
@@ -611,6 +633,7 @@ if (global.game_state == GAME_STATE_INTRO) {
     "EQUIVALENT EXCHANGE"
   );
 
+  draw_set_font(fnt_body);
   draw_set_colour(c_yellow);
   draw_text_shadow(
     intro_center_x,
@@ -660,9 +683,11 @@ if (global.game_state == GAME_STATE_GAME_OVER) {
 
   draw_set_halign(fa_center);
   draw_set_valign(fa_top);
+  draw_set_font(fnt_heading);
   draw_set_colour(c_red);
   draw_text_shadow(end_center_x, end_center_y - 142, "GAME OVER");
 
+  draw_set_font(fnt_body);
   draw_set_colour(c_white);
   draw_text_shadow(
     end_center_x,
@@ -708,9 +733,11 @@ if (global.game_state == GAME_STATE_VICTORY) {
 
   draw_set_halign(fa_center);
   draw_set_valign(fa_top);
+  draw_set_font(fnt_heading);
   draw_set_colour(c_lime);
   draw_text_shadow(victory_center_x, victory_center_y - 142, "VICTORY");
 
+  draw_set_font(fnt_body);
   draw_set_colour(c_white);
   draw_text_shadow(
     victory_center_x,
@@ -727,3 +754,4 @@ if (global.game_state == GAME_STATE_VICTORY) {
 
 draw_set_colour(c_white);
 draw_set_alpha(1);
+draw_set_font(-1);

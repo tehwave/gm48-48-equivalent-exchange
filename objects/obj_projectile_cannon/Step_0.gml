@@ -5,6 +5,9 @@ if (!game_is_running()) {
   exit;
 }
 
+// Keep projectile y-sorted with other world instances.
+depth = -y;
+
 if (instance_exists(proj_target_id)) {
   proj_target_x = proj_target_id.x;
   proj_target_y = proj_target_id.y;
@@ -12,6 +15,7 @@ if (instance_exists(proj_target_id)) {
 
 /// @type {Real}
 var direction_to_target = point_direction(x, y, proj_target_x, proj_target_y);
+image_angle = direction_to_target + proj_angle_offset;
 x += lengthdir_x(proj_speed, direction_to_target);
 y += lengthdir_y(proj_speed, direction_to_target);
 

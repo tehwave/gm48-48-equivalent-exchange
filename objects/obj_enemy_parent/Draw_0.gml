@@ -58,21 +58,25 @@ if (sprite_index != -1) {
 	/// @type {Real}
 	var bounce_scale_y = 1 + (sin(bounce_phase) * 0.06);
 	/// @type {Bool}
-	var has_slow_or_freeze = (enemy_slow_timer_steps > 0) || (enemy_freeze_timer_steps > 0);
+	var has_slow = enemy_slow_timer_steps > 0;
+	/// @type {Bool}
+	var has_freeze = enemy_freeze_timer_steps > 0;
 	/// @type {Real}
 	var slow_tint_strength = clamp(1 - enemy_slow_factor, 0.12, 0.55);
 	/// @type {Real}
-	var freeze_tint_strength = (enemy_freeze_timer_steps > 0) ? 0.65 : 0;
+	var freeze_tint_strength = has_freeze ? 0.65 : 0;
 	/// @type {Real}
-	var tint_mix = max(slow_tint_strength, freeze_tint_strength);
-	/// @type {Real}
-	var tint_r = clamp(255 - (140 * tint_mix), 0, 255);
-	/// @type {Real}
-	var tint_g = clamp(255 - (45 * tint_mix), 0, 255);
-	/// @type {Real}
-	var tint_b = 255;
-	/// @type {Real}
-	var sprite_tint = has_slow_or_freeze ? make_colour_rgb(tint_r, tint_g, tint_b) : c_white;
+	var sprite_tint = c_white;
+
+	if (has_slow) {
+		/// @type {Real}
+		var slow_tint_mix = clamp(slow_tint_strength, 0, 1);
+		sprite_tint = merge_colour(c_white, make_colour_rgb(146, 100, 58), slow_tint_mix);
+	}
+
+	if (has_freeze) {
+		sprite_tint = merge_colour(sprite_tint, make_colour_rgb(110, 190, 255), clamp(freeze_tint_strength, 0, 1));
+	}
 	/// @type {Real}
 	var hit_flash_mix = 0;
 	if (enemy_hit_flash_steps_remaining > 0) {
@@ -123,7 +127,7 @@ if (enemy_slow_timer_steps > 0) {
 
 	gpu_set_blendmode(bm_add);
 	draw_set_alpha(slow_alpha);
-	draw_set_colour(c_aqua);
+	draw_set_colour(make_colour_rgb(184, 122, 70));
 	if (global.debug_mode) {
 		draw_circle(draw_x, draw_y - 2, slow_ring_radius, false);
 	}

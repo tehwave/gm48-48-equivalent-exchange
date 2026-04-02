@@ -143,7 +143,10 @@ if (global.debug_mode) {
   draw_circle(x, y, 16, false);
 }
 
-if (tower_attack_vfx_sprite != -1 && tower_attack_vfx_steps_remaining > 0) {
+/// @type {Bool}
+var should_draw_attack_vfx = (tower_attack_vfx_sprite != -1 && tower_attack_vfx_steps_remaining > 0);
+
+if (should_draw_attack_vfx && !tower_attack_vfx_draw_above_tower) {
   /// @type {Real}
   var frame_count = sprite_get_number(tower_attack_vfx_sprite);
   /// @type {Real}
@@ -164,6 +167,20 @@ if (sprite_index != -1) {
     draw_sprite_ext(sprite_index, image_index, x + draw_offset_x, y + draw_offset_y, draw_scale_x, draw_scale_y, draw_angle, c_yellow, tower_flash_overlay_alpha);
     gpu_set_blendmode(bm_normal);
   }
+}
+
+if (should_draw_attack_vfx && tower_attack_vfx_draw_above_tower) {
+  /// @type {Real}
+  var frame_count_above = sprite_get_number(tower_attack_vfx_sprite);
+  /// @type {Real}
+  var frame_index_above = clamp(frame_count_above - tower_attack_vfx_steps_remaining, 0, frame_count_above - 1);
+  /// @type {Real}
+  var vfx_angle_above = tower_attack_vfx_angle + tower_attack_vfx_angle_offset;
+  /// @type {Real}
+  var vfx_x_above = x + draw_offset_x + lengthdir_x(tower_attack_vfx_distance, vfx_angle_above);
+  /// @type {Real}
+  var vfx_y_above = y + draw_offset_y + lengthdir_y(tower_attack_vfx_distance, vfx_angle_above);
+  draw_sprite_ext(tower_attack_vfx_sprite, frame_index_above, vfx_x_above, vfx_y_above, tower_attack_vfx_scale, tower_attack_vfx_scale, vfx_angle_above, c_white, 1);
 }
 
 if (tower_upgrade_shine_steps_remaining > 0) {
