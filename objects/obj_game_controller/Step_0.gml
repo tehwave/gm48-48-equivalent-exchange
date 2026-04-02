@@ -33,15 +33,28 @@ if (global.game_state == GAME_STATE_INTRO) {
   if (global.intro_lock_timer_steps > 0) {
     global.intro_lock_timer_steps -= 1;
     global.intro_can_continue = false;
+
+    if (keyboard_check(vk_space)) {
+      global.intro_hold_skip_steps += 1;
+      if (global.intro_hold_skip_steps >= global.intro_hold_skip_required_steps) {
+        global.intro_lock_timer_steps = 0;
+        global.intro_can_continue = true;
+        global.game_state = GAME_STATE_RUNNING;
+      }
+    } else {
+      global.intro_hold_skip_steps = 0;
+    }
   } else {
     global.intro_lock_timer_steps = 0;
     global.intro_can_continue = true;
+    global.intro_hold_skip_steps = 0;
   }
 
   // Hidden dev skip so jam iteration can bypass the intro wait.
   if (keyboard_check_pressed(vk_f8)) {
     global.intro_lock_timer_steps = 0;
     global.intro_can_continue = true;
+    global.intro_hold_skip_steps = 0;
     global.game_state = GAME_STATE_RUNNING;
   }
 

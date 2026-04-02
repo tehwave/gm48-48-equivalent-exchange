@@ -10,6 +10,8 @@ global.game_state = GAME_STATE_INTRO;
 
 global.intro_lock_timer_steps = round(INTRO_LOCK_SECONDS * room_speed);
 global.intro_can_continue = false;
+global.intro_hold_skip_steps = 0;
+global.intro_hold_skip_required_steps = max(1, round(INTRO_HOLD_SKIP_SECONDS * room_speed));
 
 global.selected_tower_type = 0;
 global.selected_tower_id = noone;
