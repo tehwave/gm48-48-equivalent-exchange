@@ -66,7 +66,7 @@ if (object_index == obj_tower_arrow) {
 	tower_directional_sprite_prefix = "SPR_Flamer";
 	tower_attack_vfx_sprite = SPR_Flamer_VFX;
 	tower_attack_vfx_scale = 0.7;
-	tower_attack_vfx_angle_offset = -90;
+	tower_attack_vfx_angle_offset = 0;
 	tower_attack_vfx_distance = 14;
 	tower_sprite_scale = 0.84;
 } else if (freeze_object != -1 && object_index == freeze_object) {
@@ -74,7 +74,7 @@ if (object_index == obj_tower_arrow) {
 	tower_directional_sprite_prefix = "SPR_Freeze";
 	tower_attack_vfx_sprite = SPR_Freeze_VFX;
 	tower_attack_vfx_scale = 0.72;
-	tower_attack_vfx_angle_offset = -90;
+	tower_attack_vfx_angle_offset = 0;
 	tower_attack_vfx_distance = 12;
 	tower_sprite_scale = 0.84;
 }

@@ -37,5 +37,16 @@ if (y >= coin_ground_y) {
   }
 }
 
+if (coin_life_steps <= COIN_DROP_EXPIRE_FLASH_STEPS) {
+  /// @type {Real}
+  var expiry_t = clamp(1 - (coin_life_steps / max(1, COIN_DROP_EXPIRE_FLASH_STEPS)), 0, 1);
+
+  coin_expire_warn_steps_remaining -= 1;
+  if (coin_expire_warn_steps_remaining <= 0) {
+    audio_play_variation(WAV_Small_Spark_1, WAV_Small_Spark_2, AUDIO_GAIN_UI * (0.24 + (0.28 * expiry_t)), 1.08, 1.28);
+    coin_expire_warn_steps_remaining = max(2, round(lerp(12, 3, expiry_t)));
+  }
+}
+
 image_angle += coin_rotation_speed;
 coin_rotation_speed *= 0.96;

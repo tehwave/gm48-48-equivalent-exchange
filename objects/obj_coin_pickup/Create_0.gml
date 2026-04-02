@@ -18,6 +18,8 @@ coin_collected = false;
 coin_collect_vfx_total_steps = 20;
 /// @type {Real}
 coin_collect_vfx_steps = 0;
+/// @type {Real}
+coin_expire_warn_steps_remaining = 0;
 
 /// @type {Real}
 coin_velocity_x = random_range(-COIN_DROP_HORIZONTAL_SPEED, COIN_DROP_HORIZONTAL_SPEED);

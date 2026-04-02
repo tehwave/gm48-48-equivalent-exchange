@@ -46,6 +46,11 @@ if (enemy_burn_timer_steps > 0) {
 var move_factor = (enemy_freeze_timer_steps > 0) ? 0 : enemy_slow_factor;
 path_speed = enemy_move_speed * move_factor;
 
+/// Rotate enemy sprite toward current movement to avoid sideways sliding.
+if (point_distance(xprevious, yprevious, x, y) > 0.01) {
+  image_angle = point_direction(xprevious, yprevious, x, y);
+}
+
 enemy_call_steps_remaining -= 1;
 if (enemy_call_steps_remaining <= 0) {
   game_audio_play_enemy_call("enemy");
@@ -69,5 +74,8 @@ if (!is_dead && enemy_hp <= 0) {
   audio_play_variation(WAV_Small_Spark_1, WAV_Small_Spark_2, AUDIO_GAIN_COMBAT, 0.96, 1.06);
   global.enemies_alive = max(0, global.enemies_alive - 1);
   game_spawn_coin_drop(x, y, enemy_reward);
+  if (object_index == obj_enemy_boss) {
+    global.player_hp += BOSS_KILL_HP_REWARD;
+  }
   enemy_death_vfx_timer = enemy_death_vfx_total_steps;
 }

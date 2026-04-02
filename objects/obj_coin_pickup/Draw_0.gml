@@ -75,7 +75,13 @@ if (coin_collected) {
 /// @type {Real}
 var expiry_alpha = 1;
 if (coin_life_steps <= COIN_DROP_EXPIRE_FLASH_STEPS) {
-  expiry_alpha = 0.45 + (0.55 * abs(sin(current_time * 0.02)));
+  /// @type {Real}
+  var expiry_t = clamp(1 - (coin_life_steps / max(1, COIN_DROP_EXPIRE_FLASH_STEPS)), 0, 1);
+  /// @type {Real}
+  var flash_frequency = lerp(0.02, 0.11, expiry_t);
+  /// @type {Real}
+  var flash_wave = abs(sin(current_time * flash_frequency));
+  expiry_alpha = lerp(1, 0.18 + (0.82 * flash_wave), expiry_t);
 }
 
 /// @type {Real}
