@@ -36,7 +36,7 @@ var shadow_radius_y = (enemy_draw_radius * 0.45 * shadow_boss_scale) + (0.2 * si
 /// @type {Real}
 var shadow_center_x = draw_x + 1;
 /// @type {Real}
-var shadow_center_y = draw_y + enemy_draw_radius - 1;
+var shadow_center_y = draw_y + 1;
 
 draw_set_alpha(0.22);
 draw_set_colour(make_color_rgb(48, 54, 58));

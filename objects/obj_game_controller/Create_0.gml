@@ -24,12 +24,22 @@ global.debug_mode = false;
 global.ambient_sound_instance = -1;
 global.enemy_call_sfx_cooldown_steps_total = max(1, round(room_speed * AUDIO_ENEMY_CALL_COOLDOWN_SECONDS));
 global.enemy_call_sfx_cooldown_steps_remaining = 0;
+global.leak_edge_flash_steps_remaining = 0;
 global.birdsong_steps_remaining = irandom_range(
 	max(1, round(room_speed * AUDIO_BIRDSONG_MIN_SECONDS)),
 	max(1, round(room_speed * AUDIO_BIRDSONG_MAX_SECONDS))
 );
 global.run_start_time_ms = current_time;
 global.run_end_time_ms = -1;
+
+global.decal_surface_static = -1;
+global.decal_surface_dynamic = -1;
+global.decal_surface_w = 0;
+global.decal_surface_h = 0;
+global.decal_static_marks = [];
+global.decal_dynamic_marks = [];
+
+game_decals_init();
 
 wave_in_progress = false;
 current_wave_has_boss = false;

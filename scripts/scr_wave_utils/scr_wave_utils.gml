@@ -3,7 +3,14 @@
 /// @param {Real} wave_index
 /// @returns {Real}
 function scr_wave_enemy_count(wave_index) {
-  return WAVE_BASE_COUNT + ((wave_index - 1) * WAVE_GROWTH);
+  /// @type {Real}
+  var enemy_count = WAVE_BASE_COUNT + ((wave_index - 1) * WAVE_GROWTH);
+
+  if (wave_index >= WAVE_EARLY_PRESSURE_START && wave_index <= WAVE_EARLY_PRESSURE_END) {
+    enemy_count += WAVE_EARLY_PRESSURE_BONUS;
+  }
+
+  return enemy_count;
 }
 
 /// @param {Real} wave_index
@@ -154,21 +161,21 @@ function scr_tower_apply_level_stats(tower_instance, tower_object, tower_level) 
   } else if (tower_object == obj_tower_slow) {
     if (tower_level == 1) {
       range = SLOW_L1_RANGE;
-      damage = SLOW_L1_DAMAGE;
+      damage = 0;
       cooldown_seconds = SLOW_L1_COOLDOWN;
       slow_factor = SLOW_L1_FACTOR;
       slow_duration = SLOW_L1_DURATION;
       slow_splash_radius = SLOW_L1_SPLASH_RADIUS;
     } else if (tower_level == 2) {
       range = SLOW_L2_RANGE;
-      damage = SLOW_L2_DAMAGE;
+      damage = 0;
       cooldown_seconds = SLOW_L2_COOLDOWN;
       slow_factor = SLOW_L2_FACTOR;
       slow_duration = SLOW_L2_DURATION;
       slow_splash_radius = SLOW_L2_SPLASH_RADIUS;
     } else {
       range = SLOW_L3_RANGE;
-      damage = SLOW_L3_DAMAGE;
+      damage = 0;
       cooldown_seconds = SLOW_L3_COOLDOWN;
       slow_factor = SLOW_L3_FACTOR;
       slow_duration = SLOW_L3_DURATION;

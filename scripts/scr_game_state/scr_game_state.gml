@@ -321,16 +321,76 @@ function game_enqueue_value_fx(value_text, category, anchor_mode, anchor_x, anch
   }
 }
 
+/// @returns {Real}
+function game_get_active_tower_count() {
+  return max(0, instance_number(obj_tower_parent));
+}
+
 /// @param {Real} tower_type_index
+/// @returns {Real}
+function scr_get_tower_base_hp_cost(tower_type_index) {
+  if (tower_type_index == 0) {
+    return max(1, TOWER_PLACEMENT_HP_COST - 1);
+  }
+
+  return TOWER_PLACEMENT_HP_COST;
+}
+
+/// @param {Asset.GMObject|Real} tower_object
+/// @returns {Real}
+function scr_get_tower_type_index_from_object(tower_object) {
+  /// @type {Asset.GMObject|Real}
+  var flamer_object = asset_get_index("obj_tower_flamer");
+  /// @type {Asset.GMObject|Real}
+  var freeze_object = asset_get_index("obj_tower_freeze");
+
+  if (tower_object == obj_tower_arrow) return 0;
+  if (tower_object == obj_tower_slow) return 1;
+  if (tower_object == obj_tower_cannon) return 2;
+  if (flamer_object != -1 && tower_object == flamer_object) return 3;
+  if (freeze_object != -1 && tower_object == freeze_object) return 4;
+
+  return -1;
+}
+
+/// @param {Real} tower_type_index
+/// @param {Real} active_tower_count
+/// @returns {Real}
+function game_get_tower_placement_hp_cost(tower_type_index, active_tower_count) {
+  /// @type {Real}
+  var resolved_tower_count = game_get_active_tower_count();
+  if (argument_count >= 2 && !is_undefined(active_tower_count)) {
+    resolved_tower_count = max(0, round(active_tower_count));
+  }
+  /// @type {Real}
+  var placement_bonus = min(
+    TOWER_PLACEMENT_COST_MAX_BONUS,
+    floor(resolved_tower_count / max(1, TOWER_PLACEMENT_COST_STEP_TOWERS))
+  );
+
+  return max(1, scr_get_tower_base_hp_cost(tower_type_index) + placement_bonus);
+}
+
+/// @param {Real} tower_type_index
+/// @param {Real} active_tower_count
 /// @returns {Struct}
-function scr_get_tower_description(tower_type_index) {
+function scr_get_tower_description(tower_type_index, active_tower_count) {
+  /// @type {Real}
+  var resolved_tower_count = game_get_active_tower_count();
+  if (argument_count >= 2 && !is_undefined(active_tower_count)) {
+    resolved_tower_count = max(0, round(active_tower_count));
+  }
+
   /// @type {Struct}
   var tower_description = {
     name : "Unknown",
     damage_type : "-",
     special : "-",
-    hp_cost : TOWER_PLACEMENT_HP_COST,
-    range : 0
+    hp_cost : game_get_tower_placement_hp_cost(tower_type_index, resolved_tower_count),
+    base_hp_cost : scr_get_tower_base_hp_cost(tower_type_index),
+    range : 0,
+    name_colour : c_silver,
+    range_colour : c_silver
   };
 
   switch (tower_type_index) {
@@ -338,36 +398,41 @@ function scr_get_tower_description(tower_type_index) {
       tower_description.name = "Arrow";
       tower_description.damage_type = "Single target";
       tower_description.special = "Fast direct damage";
-      tower_description.hp_cost = max(1, TOWER_PLACEMENT_HP_COST - 1);
       tower_description.range = ARROW_L1_RANGE;
+      tower_description.name_colour = c_aqua;
+      tower_description.range_colour = c_aqua;
       break;
     case 1:
       tower_description.name = "Slow";
       tower_description.damage_type = "Single target";
       tower_description.special = "Applies movement slow";
-      tower_description.hp_cost = TOWER_PLACEMENT_HP_COST;
       tower_description.range = SLOW_L1_RANGE;
+      tower_description.name_colour = make_color_rgb(90, 195, 255);
+      tower_description.range_colour = make_color_rgb(90, 195, 255);
       break;
     case 2:
       tower_description.name = "Cannon";
       tower_description.damage_type = "Splash";
       tower_description.special = "Area explosion";
-      tower_description.hp_cost = TOWER_PLACEMENT_HP_COST;
       tower_description.range = CANNON_L1_RANGE;
+      tower_description.name_colour = c_orange;
+      tower_description.range_colour = c_orange;
       break;
     case 3:
       tower_description.name = "Flamer";
       tower_description.damage_type = "Cone";
       tower_description.special = "Applies burn over time";
-      tower_description.hp_cost = TOWER_PLACEMENT_HP_COST;
       tower_description.range = FLAMER_L1_RANGE;
+      tower_description.name_colour = c_red;
+      tower_description.range_colour = c_red;
       break;
     case 4:
       tower_description.name = "Freeze";
       tower_description.damage_type = "Single target";
       tower_description.special = "Temporarily freezes";
-      tower_description.hp_cost = TOWER_PLACEMENT_HP_COST;
       tower_description.range = FREEZE_L1_RANGE;
+      tower_description.name_colour = make_color_rgb(128, 196, 255);
+      tower_description.range_colour = make_color_rgb(128, 196, 255);
       break;
   }
 
@@ -472,6 +537,19 @@ function game_trigger_tower_upgrade_fail_feedback(tower_id) {
   }
 }
 
+/// @description Triggers a short shake on a tower base for failed build feedback.
+/// @param {Id.Instance|Real} base_id
+/// @returns {Void}
+function game_trigger_base_build_fail_feedback(base_id) {
+  if (!instance_exists(base_id)) return;
+
+  with (base_id) {
+    if (!variable_instance_exists(id, "base_failed_build_shake_steps_total")) exit;
+    base_failed_build_shake_steps_remaining = base_failed_build_shake_steps_total;
+    base_failed_build_shake_dir = choose(-1, 1);
+  }
+}
+
 /// @param {Real} amount
 /// @param {Real} source_x
 /// @param {Real} source_y
@@ -561,7 +639,11 @@ function game_delete_selected_tower_refund_life() {
   var base_owner_id = variable_instance_exists(selected_tower_id, "base_owner_id") ? selected_tower_id.base_owner_id : noone;
 
   /// @type {Real}
-  var placement_refund_hp = variable_instance_exists(selected_tower_id, "tower_placement_hp_cost") ? selected_tower_id.tower_placement_hp_cost : TOWER_PLACEMENT_HP_COST;
+  var fallback_tower_type_index = scr_get_tower_type_index_from_object(selected_tower_object);
+  /// @type {Real}
+  var fallback_refund_hp = scr_get_tower_base_hp_cost(fallback_tower_type_index);
+  /// @type {Real}
+  var placement_refund_hp = variable_instance_exists(selected_tower_id, "tower_placement_hp_cost") ? selected_tower_id.tower_placement_hp_cost : fallback_refund_hp;
   game_add_hp(placement_refund_hp, selected_tower_id.x, selected_tower_id.y);
   if (instance_exists(base_owner_id)) {
     with (base_owner_id) {
@@ -611,6 +693,13 @@ function game_register_leak(leak_damage, source_x, source_y) {
   if (hp_lost > 0) {
     game_audio_play_life_lost(hp_lost);
 
+    /// @type {Real}
+    var leak_flash_steps = max(1, round(LEAK_EDGE_FLASH_SECONDS * room_speed));
+    if (!variable_global_exists("leak_edge_flash_steps_remaining")) {
+      global.leak_edge_flash_steps_remaining = 0;
+    }
+    global.leak_edge_flash_steps_remaining = max(global.leak_edge_flash_steps_remaining, leak_flash_steps);
+
     /// @type {String}
     var hp_loss_text = "-" + game_value_fx_format_amount(hp_lost);
     if (argument_count >= 3) {
@@ -633,10 +722,11 @@ function game_register_leak(leak_damage, source_x, source_y) {
 /// @returns {Bool}
 function enemy_register_hit_feedback(enemy_instance, damage) {
   if (!instance_exists(enemy_instance)) return;
+  if (enemy_instance.is_dead || enemy_instance.has_leaked) return;
+
+  game_decals_stamp_blood(enemy_instance.x, enemy_instance.y, damage);
 
   with (enemy_instance) {
-    if (is_dead || has_leaked) return;
-
     enemy_hit_flash_steps_remaining = max(enemy_hit_flash_steps_remaining, enemy_hit_flash_steps_total);
 
     if (enemy_hit_audio_cooldown_steps_remaining <= 0) {
@@ -728,6 +818,11 @@ function enemy_apply_slow(enemy_instance, slow_factor, duration_steps) {
 
     enemy_slow_factor = min(enemy_slow_factor, slow_factor);
     enemy_slow_timer_steps = max(enemy_slow_timer_steps, duration_steps);
+
+    if (enemy_status_slow_decal_cooldown_steps_remaining <= 0) {
+      game_decals_stamp_slow(x, y, 1 - slow_factor);
+      enemy_status_slow_decal_cooldown_steps_remaining = max(1, round(room_speed * DECAL_STATUS_GROUND_COOLDOWN_SECONDS));
+    }
   }
 }
 
@@ -749,6 +844,11 @@ function enemy_apply_burn(enemy_instance, damage_per_tick, duration_steps) {
     if (enemy_burn_tick_steps_remaining <= 0) {
       enemy_burn_tick_steps_remaining = max(1, round(ENEMY_BURN_TICK_SECONDS * room_speed));
     }
+
+    if (enemy_status_burn_decal_cooldown_steps_remaining <= 0) {
+      game_decals_stamp_flame(x, y, damage_per_tick);
+      enemy_status_burn_decal_cooldown_steps_remaining = max(1, round(room_speed * DECAL_STATUS_GROUND_COOLDOWN_SECONDS));
+    }
   }
 }
 
@@ -764,6 +864,11 @@ function enemy_apply_freeze(enemy_instance, duration_steps) {
 
     // Refresh freeze by extending to the strongest remaining timer.
     enemy_freeze_timer_steps = max(enemy_freeze_timer_steps, duration_steps);
+
+    if (enemy_status_freeze_decal_cooldown_steps_remaining <= 0) {
+      game_decals_stamp_ice(x, y, duration_steps);
+      enemy_status_freeze_decal_cooldown_steps_remaining = max(1, round(room_speed * DECAL_STATUS_GROUND_COOLDOWN_SECONDS));
+    }
   }
 }
 
@@ -867,4 +972,488 @@ function game_audio_play_life_lost(hp_lost) {
     0.92,
     1.02
   );
+}
+
+/// @returns {Void}
+function game_decals_init() {
+  global.decal_surface_static = -1;
+  global.decal_surface_dynamic = -1;
+  global.decal_surface_w = max(1, room_width);
+  global.decal_surface_h = max(1, room_height);
+  global.decal_static_marks = [];
+  global.decal_dynamic_marks = [];
+
+  game_decals_ensure_surfaces();
+  game_decals_rebuild_static_surface();
+  game_decals_rebuild_dynamic_surface();
+}
+
+/// @returns {Void}
+function game_decals_shutdown() {
+  if (surface_exists(global.decal_surface_static)) {
+    surface_free(global.decal_surface_static);
+  }
+
+  if (surface_exists(global.decal_surface_dynamic)) {
+    surface_free(global.decal_surface_dynamic);
+  }
+
+  global.decal_surface_static = -1;
+  global.decal_surface_dynamic = -1;
+  global.decal_static_marks = [];
+  global.decal_dynamic_marks = [];
+}
+
+/// @returns {Void}
+function game_decals_ensure_surfaces() {
+  if (!variable_global_exists("decal_surface_static")) global.decal_surface_static = -1;
+  if (!variable_global_exists("decal_surface_dynamic")) global.decal_surface_dynamic = -1;
+  if (!variable_global_exists("decal_surface_w")) global.decal_surface_w = max(1, room_width);
+  if (!variable_global_exists("decal_surface_h")) global.decal_surface_h = max(1, room_height);
+  if (!variable_global_exists("decal_static_marks")) global.decal_static_marks = [];
+  if (!variable_global_exists("decal_dynamic_marks")) global.decal_dynamic_marks = [];
+
+  /// @type {Real}
+  var target_w = max(1, room_width);
+  /// @type {Real}
+  var target_h = max(1, room_height);
+  /// @type {Bool}
+  var needs_rebuild_static = false;
+  /// @type {Bool}
+  var needs_rebuild_dynamic = false;
+
+  if (global.decal_surface_w != target_w || global.decal_surface_h != target_h) {
+    global.decal_surface_w = target_w;
+    global.decal_surface_h = target_h;
+    needs_rebuild_static = true;
+    needs_rebuild_dynamic = true;
+  }
+
+  if (!surface_exists(global.decal_surface_static)) {
+    global.decal_surface_static = surface_create(global.decal_surface_w, global.decal_surface_h);
+    needs_rebuild_static = true;
+  }
+
+  if (!surface_exists(global.decal_surface_dynamic)) {
+    global.decal_surface_dynamic = surface_create(global.decal_surface_w, global.decal_surface_h);
+    needs_rebuild_dynamic = true;
+  }
+
+  if (needs_rebuild_static) {
+    game_decals_rebuild_static_surface();
+  }
+
+  if (needs_rebuild_dynamic) {
+    game_decals_rebuild_dynamic_surface();
+  }
+}
+
+/// @returns {Void}
+function game_decals_rebuild_static_surface() {
+  if (!surface_exists(global.decal_surface_static)) return;
+
+  surface_set_target(global.decal_surface_static);
+  draw_clear_alpha(c_black, 0);
+
+  /// @type {Real}
+  var static_count = array_length(global.decal_static_marks);
+  for (var i = 0; i < static_count; i += 1) {
+    game_decals_draw_mark(global.decal_static_marks[i], global.decal_static_marks[i].alpha);
+  }
+
+  surface_reset_target();
+}
+
+/// @returns {Void}
+function game_decals_rebuild_dynamic_surface() {
+  if (!surface_exists(global.decal_surface_dynamic)) return;
+
+  surface_set_target(global.decal_surface_dynamic);
+  draw_clear_alpha(c_black, 0);
+
+  /// @type {Real}
+  var dynamic_count = array_length(global.decal_dynamic_marks);
+  for (var i = 0; i < dynamic_count; i += 1) {
+    /// @type {Struct}
+    var mark = global.decal_dynamic_marks[i];
+    /// @type {Real}
+    var fade = clamp(mark.life / max(1, mark.max_life), 0, 1);
+    game_decals_draw_mark(mark, mark.alpha * fade);
+  }
+
+  surface_reset_target();
+}
+
+/// @param {Struct} mark
+/// @param {Real} alpha_override
+/// @returns {Void}
+function game_decals_noise(seed, channel) {
+  /// @type {Real}
+  var n = sin((seed * 12.9898) + (channel * 78.233)) * 43758.5453;
+  return n - floor(n);
+}
+
+/// @param {Struct} mark
+/// @param {Real} draw_alpha
+/// @param {Real} outer_colour
+/// @param {Real} inner_colour
+/// @param {Real} lobe_count
+/// @returns {Void}
+function game_decals_draw_blob(mark, draw_alpha, outer_colour, inner_colour, lobe_count) {
+  /// @type {Real}
+  var seed = variable_struct_exists(mark, "seed") ? mark.seed : ((mark.x * 17) + (mark.y * 11) + (mark.size * 9));
+
+  draw_set_alpha(draw_alpha * 0.85);
+  draw_set_colour(outer_colour);
+  draw_circle(mark.x, mark.y, max(1, mark.size * 0.48), false);
+
+  for (var i = 0; i < lobe_count; i += 1) {
+    /// @type {Real}
+    var angle = game_decals_noise(seed, i + 1) * 360;
+    /// @type {Real}
+    var dist = mark.size * (0.18 + (game_decals_noise(seed, 40 + i) * 0.72));
+    /// @type {Real}
+    var radius = max(1, mark.size * (0.20 + (game_decals_noise(seed, 80 + i) * 0.36)));
+
+    draw_circle(
+      mark.x + lengthdir_x(dist, angle),
+      mark.y + lengthdir_y(dist, angle),
+      radius,
+      false
+    );
+  }
+
+  draw_set_alpha(draw_alpha * 0.6);
+  draw_set_colour(inner_colour);
+
+  for (var j = 0; j < max(2, floor(lobe_count * 0.55)); j += 1) {
+    /// @type {Real}
+    var inner_angle = game_decals_noise(seed, 140 + j) * 360;
+    /// @type {Real}
+    var inner_dist = mark.size * (0.08 + (game_decals_noise(seed, 170 + j) * 0.38));
+    /// @type {Real}
+    var inner_radius = max(0.9, mark.size * (0.16 + (game_decals_noise(seed, 200 + j) * 0.24)));
+
+    draw_circle(
+      mark.x + lengthdir_x(inner_dist, inner_angle),
+      mark.y + lengthdir_y(inner_dist, inner_angle),
+      inner_radius,
+      false
+    );
+  }
+}
+
+/// @param {Struct} mark
+/// @param {Real} draw_alpha
+/// @returns {Void}
+function game_decals_draw_track(mark, draw_alpha) {
+  /// @type {Real}
+  var seed = variable_struct_exists(mark, "seed") ? mark.seed : ((mark.x * 19) + (mark.y * 13) + (mark.angle * 0.7));
+  /// @type {Real}
+  var pair_offset = DECAL_TRACK_PAIR_OFFSET * mark.size;
+  /// @type {Real}
+  var track_colour = make_color_rgb(60, 52, 46);
+
+  draw_set_alpha(draw_alpha);
+  draw_set_colour(track_colour);
+
+  for (var side = 0; side < 2; side += 1) {
+    /// @type {Real}
+    var side_sign = (side == 0) ? 1 : -1;
+    /// @type {Real}
+    var side_seed_offset = side * 31;
+    /// @type {Real}
+    var side_x = mark.x + lengthdir_x(pair_offset, mark.angle + (90 * side_sign));
+    /// @type {Real}
+    var side_y = mark.y + lengthdir_y(pair_offset, mark.angle + (90 * side_sign));
+
+    for (var seg = 0; seg < 3; seg += 1) {
+      /// @type {Real}
+      var seg_dist = (seg - 1) * (mark.size * 1.8);
+      /// @type {Real}
+      var seg_jitter = (game_decals_noise(seed, 240 + side_seed_offset + seg) * 2 - 1) * (mark.size * 0.42);
+      /// @type {Real}
+      var seg_radius = max(0.75, mark.size * (0.62 + (game_decals_noise(seed, 280 + side_seed_offset + seg) * 0.40)));
+
+      draw_circle(
+        side_x + lengthdir_x(seg_dist, mark.angle) + lengthdir_x(seg_jitter, mark.angle + 90),
+        side_y + lengthdir_y(seg_dist, mark.angle) + lengthdir_y(seg_jitter, mark.angle + 90),
+        seg_radius,
+        false
+      );
+    }
+  }
+}
+
+/// @param {Struct} mark
+/// @param {Real} alpha_override
+/// @returns {Void}
+function game_decals_draw_mark(mark, alpha_override) {
+  /// @type {Real}
+  var draw_alpha = clamp(alpha_override, 0, 1);
+  if (draw_alpha <= 0) return;
+
+  draw_set_alpha(draw_alpha);
+
+  switch (mark.type) {
+    case DECAL_TYPE_BLOOD:
+      game_decals_draw_blob(mark, draw_alpha, make_color_rgb(120, 32, 28), make_color_rgb(88, 18, 16), 5);
+      break;
+
+    case DECAL_TYPE_ICE:
+      game_decals_draw_blob(mark, draw_alpha, make_color_rgb(138, 202, 255), make_color_rgb(196, 238, 255), 4);
+      break;
+
+    case DECAL_TYPE_QUAKE:
+      game_decals_draw_blob(mark, draw_alpha, make_color_rgb(116, 100, 88), make_color_rgb(92, 80, 72), 6);
+      break;
+
+    case DECAL_TYPE_FLAME:
+      game_decals_draw_blob(mark, draw_alpha, make_color_rgb(255, 124, 54), make_color_rgb(136, 42, 22), 5);
+      break;
+
+    case DECAL_TYPE_SLOW:
+      game_decals_draw_blob(mark, draw_alpha, make_color_rgb(112, 122, 66), make_color_rgb(82, 95, 48), 5);
+      break;
+
+    case DECAL_TYPE_TRACK:
+      game_decals_draw_track(mark, draw_alpha);
+      break;
+  }
+
+  draw_set_alpha(1);
+  draw_set_colour(c_white);
+}
+
+/// @param {Real} mark_type
+/// @param {Real} px
+/// @param {Real} py
+/// @param {Real} size
+/// @param {Real} alpha
+/// @param {Real} angle
+/// @returns {Void}
+function game_decals_add_static_mark(mark_type, px, py, size, alpha, angle) {
+  game_decals_ensure_surfaces();
+
+  /// @type {Struct}
+  var mark = {
+    type : mark_type,
+    x : px,
+    y : py,
+    size : size,
+    alpha : alpha,
+    angle : angle,
+    seed : random(1000000),
+    life : 1,
+    max_life : 1
+  };
+
+  array_push(global.decal_static_marks, mark);
+
+  /// @type {Bool}
+  var exceeded = array_length(global.decal_static_marks) > DECAL_STATIC_MAX_MARKS;
+  if (exceeded) {
+    array_delete(global.decal_static_marks, 0, 1);
+    game_decals_rebuild_static_surface();
+    return;
+  }
+
+  if (!surface_exists(global.decal_surface_static)) return;
+
+  surface_set_target(global.decal_surface_static);
+  game_decals_draw_mark(mark, mark.alpha);
+  surface_reset_target();
+}
+
+/// @param {Real} mark_type
+/// @param {Real} px
+/// @param {Real} py
+/// @param {Real} size
+/// @param {Real} alpha
+/// @param {Real} angle
+/// @param {Real} life_steps
+/// @returns {Void}
+function game_decals_add_dynamic_mark(mark_type, px, py, size, alpha, angle, life_steps) {
+  game_decals_ensure_surfaces();
+
+  /// @type {Struct}
+  var mark = {
+    type : mark_type,
+    x : px,
+    y : py,
+    size : size,
+    alpha : alpha,
+    angle : angle,
+    seed : random(1000000),
+    life : max(1, life_steps),
+    max_life : max(1, life_steps)
+  };
+
+  array_push(global.decal_dynamic_marks, mark);
+
+  if (array_length(global.decal_dynamic_marks) > DECAL_DYNAMIC_MAX_MARKS) {
+    array_delete(global.decal_dynamic_marks, 0, 1);
+  }
+}
+
+/// @returns {Void}
+function game_decals_update() {
+  game_decals_ensure_surfaces();
+
+  /// @type {Array<Struct>}
+  var next_marks = [];
+  /// @type {Real}
+  var mark_count = array_length(global.decal_dynamic_marks);
+
+  for (var i = 0; i < mark_count; i += 1) {
+    /// @type {Struct}
+    var mark = global.decal_dynamic_marks[i];
+    mark.life -= 1;
+    if (mark.life > 0) {
+      array_push(next_marks, mark);
+    }
+  }
+
+  global.decal_dynamic_marks = next_marks;
+  game_decals_rebuild_dynamic_surface();
+}
+
+/// @returns {Void}
+function game_decals_draw() {
+  game_decals_ensure_surfaces();
+
+  if (surface_exists(global.decal_surface_static)) {
+    draw_surface(global.decal_surface_static, 0, 0);
+  }
+
+  if (surface_exists(global.decal_surface_dynamic)) {
+    draw_surface(global.decal_surface_dynamic, 0, 0);
+  }
+}
+
+/// @param {Real} px
+/// @param {Real} py
+/// @param {Real} damage
+/// @returns {Void}
+function game_decals_stamp_blood(px, py, damage) {
+  /// @type {Real}
+  var intensity = clamp(damage * 0.35, 0, DECAL_BLOOD_SIZE_MAX - DECAL_BLOOD_SIZE_MIN);
+  /// @type {Real}
+  var size = clamp(DECAL_BLOOD_SIZE_MIN + intensity, DECAL_BLOOD_SIZE_MIN, DECAL_BLOOD_SIZE_MAX);
+  /// @type {Real}
+  var alpha = random_range(DECAL_BLOOD_ALPHA_MIN, DECAL_BLOOD_ALPHA_MAX);
+
+  game_decals_add_static_mark(
+    DECAL_TYPE_BLOOD,
+    px + random_range(-2.2, 2.2),
+    py + random_range(-2.2, 2.2),
+    size,
+    alpha,
+    random(360)
+  );
+}
+
+/// @param {Real} px
+/// @param {Real} py
+/// @param {Real} duration_steps
+/// @returns {Void}
+function game_decals_stamp_ice(px, py, duration_steps) {
+  /// @type {Real}
+  var size_bonus = clamp(duration_steps / max(1, room_speed), 0, 3.5);
+  /// @type {Real}
+  var size = clamp(DECAL_ICE_SIZE_MIN + size_bonus, DECAL_ICE_SIZE_MIN, DECAL_ICE_SIZE_MAX);
+
+  game_decals_add_static_mark(
+    DECAL_TYPE_ICE,
+    px + random_range(-1.2, 1.2),
+    py + random_range(-1.2, 1.2),
+    size,
+    DECAL_ICE_ALPHA,
+    random(360)
+  );
+}
+
+/// @param {Real} px
+/// @param {Real} py
+/// @param {Real} burn_strength
+/// @returns {Void}
+function game_decals_stamp_flame(px, py, burn_strength) {
+  /// @type {Real}
+  var size_bonus = clamp(burn_strength * 1.8, 0, DECAL_FLAME_SIZE_MAX - DECAL_FLAME_SIZE_MIN);
+  /// @type {Real}
+  var size = clamp(DECAL_FLAME_SIZE_MIN + size_bonus, DECAL_FLAME_SIZE_MIN, DECAL_FLAME_SIZE_MAX);
+
+  game_decals_add_static_mark(
+    DECAL_TYPE_FLAME,
+    px + random_range(-1.6, 1.6),
+    py + random_range(-1.6, 1.6),
+    size,
+    DECAL_FLAME_ALPHA,
+    random(360)
+  );
+}
+
+/// @param {Real} px
+/// @param {Real} py
+/// @param {Real} slow_strength
+/// @returns {Void}
+function game_decals_stamp_slow(px, py, slow_strength) {
+  /// @type {Real}
+  var size_bonus = clamp(slow_strength * 8, 0, DECAL_SLOW_SIZE_MAX - DECAL_SLOW_SIZE_MIN);
+  /// @type {Real}
+  var size = clamp(DECAL_SLOW_SIZE_MIN + size_bonus, DECAL_SLOW_SIZE_MIN, DECAL_SLOW_SIZE_MAX);
+
+  game_decals_add_static_mark(
+    DECAL_TYPE_SLOW,
+    px + random_range(-1.4, 1.4),
+    py + random_range(-1.4, 1.4),
+    size,
+    DECAL_SLOW_ALPHA,
+    random(360)
+  );
+}
+
+/// @param {Real} px
+/// @param {Real} py
+/// @param {Real} splash_radius
+/// @returns {Void}
+function game_decals_stamp_quake(px, py, splash_radius) {
+  /// @type {Real}
+  var base_size = clamp((splash_radius * 0.2) + DECAL_QUAKE_SIZE_MIN, DECAL_QUAKE_SIZE_MIN, DECAL_QUAKE_SIZE_MAX);
+
+  game_decals_add_static_mark(
+    DECAL_TYPE_QUAKE,
+    px,
+    py,
+    base_size,
+    DECAL_QUAKE_ALPHA,
+    random(360)
+  );
+
+  for (var i = 0; i < 2; i += 1) {
+    game_decals_add_static_mark(
+      DECAL_TYPE_QUAKE,
+      px + random_range(-6, 6),
+      py + random_range(-6, 6),
+      max(3, base_size * random_range(0.45, 0.72)),
+      DECAL_QUAKE_ALPHA * 0.75,
+      random(360)
+    );
+  }
+}
+
+/// @param {Real} px
+/// @param {Real} py
+/// @param {Real} move_angle
+/// @param {Real} speed_factor
+/// @returns {Void}
+function game_decals_stamp_track(px, py, move_angle, speed_factor) {
+  /// @type {Real}
+  var alpha = lerp(DECAL_TRACK_ALPHA_MIN, DECAL_TRACK_ALPHA_MAX, clamp(speed_factor, 0, 1));
+  /// @type {Real}
+  var size = random_range(DECAL_TRACK_SIZE_MIN, DECAL_TRACK_SIZE_MAX);
+  /// @type {Real}
+  var life_steps = max(1, round(room_speed * DECAL_TRACK_LIFETIME_SECONDS));
+
+  game_decals_add_dynamic_mark(DECAL_TYPE_TRACK, px, py, size, alpha, move_angle, life_steps);
 }

@@ -10,11 +10,13 @@ var enemy_wave_index = variable_instance_exists(id, "enemy_wave") ? enemy_wave :
 var hp_scale = scr_wave_enemy_hp_scale(enemy_wave_index);
 /// @type {Real}
 var speed_scale = scr_wave_enemy_speed_scale(enemy_wave_index);
+/// @type {Real}
+var reward_wave_progress = max(0, enemy_wave_index - 1);
 
 if (is_boss_type) {
   enemy_hp_max = round(ENEMY_BOSS_BASE_HP * hp_scale * 2.3);
   enemy_move_speed = ENEMY_BOSS_BASE_SPEED * speed_scale;
-  enemy_reward = round(ENEMY_BOSS_BASE_REWARD * (1 + (enemy_wave_index * 0.08)));
+  enemy_reward = round(ENEMY_BOSS_BASE_REWARD * (1 + (reward_wave_progress * ENEMY_BOSS_REWARD_SCALE_PER_WAVE)));
   enemy_leak_damage = ENEMY_BOSS_LEAK_DAMAGE;
   enemy_draw_radius = 16;
   image_xscale = 1.30;
@@ -22,7 +24,7 @@ if (is_boss_type) {
 } else {
   enemy_hp_max = round(ENEMY_BASIC_BASE_HP * hp_scale);
   enemy_move_speed = ENEMY_BASIC_BASE_SPEED * speed_scale;
-  enemy_reward = round(ENEMY_BASIC_BASE_REWARD * (1 + (enemy_wave_index * 0.04)));
+  enemy_reward = round(ENEMY_BASIC_BASE_REWARD * (1 + (reward_wave_progress * ENEMY_BASIC_REWARD_SCALE_PER_WAVE)));
   enemy_leak_damage = ENEMY_BASIC_LEAK_DAMAGE;
   enemy_draw_radius = 10;
   image_xscale = 1;
@@ -50,6 +52,10 @@ enemy_hit_flash_steps_total = max(1, round(room_speed * ENEMY_HIT_FLASH_SECONDS)
 enemy_hit_flash_steps_remaining = 0;
 enemy_hit_audio_cooldown_steps_total = max(1, round(room_speed * ENEMY_HIT_AUDIO_COOLDOWN_SECONDS));
 enemy_hit_audio_cooldown_steps_remaining = 0;
+enemy_status_slow_decal_cooldown_steps_remaining = 0;
+enemy_status_burn_decal_cooldown_steps_remaining = 0;
+enemy_status_freeze_decal_cooldown_steps_remaining = 0;
+enemy_track_distance_accumulator = random_range(0, DECAL_TRACK_STAMP_SPACING);
 enemy_spawn_offset_x = 0;
 enemy_spawn_offset_y = 0;
 enemy_call_steps_remaining = irandom_range(

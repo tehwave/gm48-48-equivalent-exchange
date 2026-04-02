@@ -42,6 +42,10 @@ tower_fire_wiggle_dir = choose(-1, 1);
 base_owner_id = variable_instance_exists(id, "base_owner_id") ? base_owner_id : noone;
 
 /// @type {Real}
+var tower_type_index = scr_get_tower_type_index_from_object(object_index);
+tower_placement_hp_cost = variable_instance_exists(id, "tower_placement_hp_cost") ? tower_placement_hp_cost : scr_get_tower_base_hp_cost(tower_type_index);
+
+/// @type {Real}
 var tower_sprite_scale = 0.8;
 /// @type {Asset.GMObject|Real}
 var flamer_object = asset_get_index("obj_tower_flamer");

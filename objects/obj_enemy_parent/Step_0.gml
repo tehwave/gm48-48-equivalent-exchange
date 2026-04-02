@@ -37,6 +37,18 @@ if (enemy_hit_audio_cooldown_steps_remaining > 0) {
   enemy_hit_audio_cooldown_steps_remaining -= 1;
 }
 
+if (enemy_status_slow_decal_cooldown_steps_remaining > 0) {
+  enemy_status_slow_decal_cooldown_steps_remaining -= 1;
+}
+
+if (enemy_status_burn_decal_cooldown_steps_remaining > 0) {
+  enemy_status_burn_decal_cooldown_steps_remaining -= 1;
+}
+
+if (enemy_status_freeze_decal_cooldown_steps_remaining > 0) {
+  enemy_status_freeze_decal_cooldown_steps_remaining -= 1;
+}
+
 if (enemy_burn_timer_steps > 0) {
   enemy_burn_timer_steps -= 1;
   enemy_burn_tick_steps_remaining -= 1;
@@ -54,9 +66,30 @@ if (enemy_burn_timer_steps > 0) {
 var move_factor = (enemy_freeze_timer_steps > 0) ? 0 : enemy_slow_factor;
 path_speed = enemy_move_speed * move_factor;
 
-/// Rotate enemy sprite toward current movement to avoid sideways sliding.
-if (point_distance(xprevious, yprevious, x, y) > 0.01) {
-  image_angle = point_direction(xprevious, yprevious, x, y);
+/// Keep enemy art upright and only mirror when moving left.
+/// @type {Real}
+var delta_x = x - xprevious;
+if (delta_x < -0.01) {
+  image_xscale = -abs(image_xscale);
+} else if (delta_x > 0.01) {
+  image_xscale = abs(image_xscale);
+}
+image_angle = 0;
+
+/// @type {Real}
+var travel_step = point_distance(xprevious, yprevious, x, y);
+if (travel_step > 0.01) {
+  enemy_track_distance_accumulator += travel_step;
+
+  /// @type {Real}
+  var move_angle = point_direction(xprevious, yprevious, x, y);
+  /// @type {Real}
+  var speed_factor = clamp(path_speed / max(0.001, enemy_move_speed), 0, 1);
+
+  while (enemy_track_distance_accumulator >= DECAL_TRACK_STAMP_SPACING) {
+    enemy_track_distance_accumulator -= DECAL_TRACK_STAMP_SPACING;
+    game_decals_stamp_track(x + enemy_spawn_offset_x, y + enemy_spawn_offset_y + 2, move_angle, speed_factor);
+  }
 }
 
 enemy_call_steps_remaining -= 1;

@@ -1,5 +1,7 @@
 /// @description Handles wave state machine, inputs, and run end conditions.
 
+game_decals_update();
+
 if (global.game_state == GAME_STATE_RUNNING) {
   game_audio_start_ambience();
 } else {
@@ -8,6 +10,10 @@ if (global.game_state == GAME_STATE_RUNNING) {
 
 if (global.enemy_call_sfx_cooldown_steps_remaining > 0) {
   global.enemy_call_sfx_cooldown_steps_remaining -= 1;
+}
+
+if (global.leak_edge_flash_steps_remaining > 0) {
+  global.leak_edge_flash_steps_remaining -= 1;
 }
 
 if (global.confirm_timer_steps > 0) {
@@ -119,6 +125,10 @@ var key_escape = keyboard_check_pressed(vk_escape);
 var mouse_left = mouse_check_button_pressed(mb_left);
 /// @type {Bool}
 var mouse_right = mouse_check_button_pressed(mb_right);
+/// @type {Bool}
+var mouse_wheel_up_pressed = mouse_wheel_up();
+/// @type {Bool}
+var mouse_wheel_down_pressed = mouse_wheel_down();
 
 if (global.build_mode && !instance_exists(global.build_base_id)) {
   global.build_mode = false;
@@ -140,6 +150,8 @@ if (mouse_right) {
 if (global.build_mode) {
   if (key_q) global.selected_tower_type = (global.selected_tower_type + 4) mod 5;
   if (key_e) global.selected_tower_type = (global.selected_tower_type + 1) mod 5;
+  if (mouse_wheel_up_pressed) global.selected_tower_type = (global.selected_tower_type + 4) mod 5;
+  if (mouse_wheel_down_pressed) global.selected_tower_type = (global.selected_tower_type + 1) mod 5;
   if (key_1) global.selected_tower_type = 0;
   if (key_2) global.selected_tower_type = 1;
   if (key_3) global.selected_tower_type = 2;
@@ -179,14 +191,16 @@ if (global.build_mode) {
   if (build_confirmed && instance_exists(target_base_id) && !target_base_id.occupied) {
     /// @type {Asset.GMObject|Real}
     var tower_object = scr_get_selected_tower_object();
-    /// @type {Struct}
-    var selected_tower_description = scr_get_tower_description(global.selected_tower_type);
     /// @type {Real}
-    var placement_hp_cost = selected_tower_description.hp_cost;
+    var active_tower_count = game_get_active_tower_count();
+    /// @type {Real}
+    var placement_hp_cost = game_get_tower_placement_hp_cost(global.selected_tower_type, active_tower_count);
 
     if (tower_object == noone) {
+      game_trigger_base_build_fail_feedback(target_base_id);
       audio_play_variation(WAV_Snake_Hiss_1, WAV_Snake_Hiss_2, AUDIO_GAIN_UI * 0.42, 0.95, 1.05);
     } else if (!game_try_spend_hp(placement_hp_cost, target_base_id.x, target_base_id.y)) {
+      game_trigger_base_build_fail_feedback(target_base_id);
       audio_play_variation(WAV_Snake_Hiss_1, WAV_Snake_Hiss_2, AUDIO_GAIN_UI * 0.42, 0.95, 1.05);
     } else {
       target_base_id.tower_instance_id = instance_create_layer(target_base_id.x, target_base_id.y, "Instances", tower_object, {

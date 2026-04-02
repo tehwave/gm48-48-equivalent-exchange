@@ -18,7 +18,38 @@ var top_left_y = 16;
 /// @type {Real}
 var top_left_width = 318;
 /// @type {Real}
-var top_left_height = 86;
+var top_left_height = 130;
+
+/// @type {Real}
+var display_wave_index = clamp(global.wave_index, 0, TOTAL_WAVES);
+/// @type {Real}
+var preview_wave_index = min(TOTAL_WAVES, display_wave_index + 1);
+/// @type {Bool}
+var preview_wave_exists = preview_wave_index > display_wave_index && preview_wave_index <= TOTAL_WAVES;
+/// @type {Real}
+var preview_enemy_count = preview_wave_exists ? scr_wave_enemy_count(preview_wave_index) : 0;
+if (preview_wave_exists && scr_wave_is_boss(preview_wave_index)) {
+  preview_enemy_count += 1;
+}
+
+/// @type {Real}
+var next_boss_wave = 0;
+if (display_wave_index < TOTAL_WAVES) {
+  next_boss_wave = ceil((display_wave_index + 1) / BOSS_WAVE_INTERVAL) * BOSS_WAVE_INTERVAL;
+  if (next_boss_wave > TOTAL_WAVES) next_boss_wave = 0;
+}
+
+/// @type {String}
+var boss_timing_text = "No remaining boss waves";
+if (display_wave_index > 0 && scr_wave_is_boss(display_wave_index)) {
+  if ((display_wave_index + BOSS_WAVE_INTERVAL) <= TOTAL_WAVES) {
+    boss_timing_text = "Boss: NOW | Next W" + string(display_wave_index + BOSS_WAVE_INTERVAL);
+  } else {
+    boss_timing_text = "Boss: NOW | Final boss";
+  }
+} else if (next_boss_wave > 0) {
+  boss_timing_text = "Boss: W" + string(next_boss_wave) + " (" + string(next_boss_wave - display_wave_index) + " waves)";
+}
 
 if (!is_intro_screen) {
   scr_draw_rounded_panel(top_left_x, top_left_y, top_left_width, top_left_height, 0.58, 14);
@@ -28,10 +59,18 @@ if (!is_intro_screen) {
   draw_text_shadow(top_left_x + 14, top_left_y + 10, "Wave " + string(global.wave_index) + "/" + string(TOTAL_WAVES));
 
   /// @type {String}
-  var enemies_text = "Enemies: " + string(global.enemies_alive);
+  var enemies_text = "Alive now: " + string(global.enemies_alive);
+  /// @type {String}
+  var next_wave_text = preview_wave_exists
+    ? "Next wave: W" + string(preview_wave_index) + " - " + string(preview_enemy_count) + " enemies"
+    : "Next wave: End of run";
   draw_set_font(fnt_body);
-  draw_set_colour(c_ltgray);
+  draw_set_colour(c_white);
   draw_text_shadow(top_left_x + 14, top_left_y + 40, enemies_text);
+  draw_set_colour(c_white);
+  draw_text_shadow(top_left_x + 14, top_left_y + 62, next_wave_text);
+  draw_set_colour((display_wave_index > 0 && scr_wave_is_boss(display_wave_index)) ? c_orange : c_aqua);
+  draw_text_shadow(top_left_x + 14, top_left_y + 84, boss_timing_text);
 
   if (global.wave_index > 0 && scr_wave_is_boss(global.wave_index)) {
     draw_set_font(fnt_heading);
@@ -42,13 +81,47 @@ if (!is_intro_screen) {
 }
 
 /// @type {Real}
-var top_right_width = 224;
+var top_right_width = 332;
 /// @type {Real}
-var top_right_height = 82;
+var top_right_height = 130;
 /// @type {Real}
 var top_right_x = gui_width - top_right_width - 16;
 /// @type {Real}
 var top_right_y = 16;
+
+/// @type {Real}
+var hud_active_tower_count = game_get_active_tower_count();
+/// @type {Real}
+var hud_escalation_bonus = min(
+  TOWER_PLACEMENT_COST_MAX_BONUS,
+  floor(hud_active_tower_count / max(1, TOWER_PLACEMENT_COST_STEP_TOWERS))
+);
+/// @type {Real}
+var hud_next_arrow_cost = game_get_tower_placement_hp_cost(0, hud_active_tower_count);
+/// @type {Real}
+var hud_next_standard_cost = game_get_tower_placement_hp_cost(1, hud_active_tower_count);
+/// @type {Real}
+var hud_after_next_arrow_cost = game_get_tower_placement_hp_cost(0, hud_active_tower_count + 1);
+/// @type {Real}
+var hud_after_next_standard_cost = game_get_tower_placement_hp_cost(1, hud_active_tower_count + 1);
+/// @type {Real}
+var hud_tower_life_invested = 0;
+
+/// Aggregate tower investment without relying on with/other cross-scope locals.
+/// @type {Real}
+var hud_tower_count = instance_number(obj_tower_parent);
+for (var hud_tower_index = 0; hud_tower_index < hud_tower_count; hud_tower_index += 1) {
+  /// @type {Id.Instance|Real}
+  var hud_tower_id = instance_find(obj_tower_parent, hud_tower_index);
+  if (!instance_exists(hud_tower_id)) continue;
+
+  /// @type {Real}
+  var paid_life = variable_instance_exists(hud_tower_id, "tower_placement_hp_cost")
+    ? hud_tower_id.tower_placement_hp_cost
+    : scr_get_tower_base_hp_cost(scr_get_tower_type_index_from_object(hud_tower_id.object_index));
+
+  hud_tower_life_invested += paid_life;
+}
 
 if (!is_intro_screen) {
   scr_draw_rounded_panel(top_right_x, top_right_y, top_right_width, top_right_height, 0.58, 14);
@@ -61,6 +134,18 @@ if (!is_intro_screen) {
   draw_set_font(fnt_heading);
   draw_set_colour(make_color_rgb(255, 134, 198));
   draw_text_shadow(life_text_x, life_text_y, "Life: " + string(global.player_hp));
+
+  draw_set_font(fnt_body);
+  draw_set_colour(c_white);
+  draw_text_shadow(top_right_x + 14, top_right_y + 66, "Refund pool: " + string(round(hud_tower_life_invested)) + " Life");
+  draw_set_colour(c_white);
+  draw_text_shadow(top_right_x + 14, top_right_y + 86, "Build pressure: +" + string(hud_escalation_bonus) + " Life");
+  draw_set_colour(c_aqua);
+  draw_text_shadow(
+    top_right_x + 14,
+    top_right_y + 106,
+    "Cost now/after: Arrow " + string(hud_next_arrow_cost) + "/" + string(hud_after_next_arrow_cost) + " | Others " + string(hud_next_standard_cost) + "/" + string(hud_after_next_standard_cost)
+  );
   draw_set_font(fnt_body);
 }
 
@@ -81,6 +166,18 @@ if (!variable_global_exists("coin_spend_particles")) {
 if (!variable_global_exists("coin_spend_vfx_bursts")) {
   /// @type {Array<Struct>}
   global.coin_spend_vfx_bursts = [];
+}
+
+if (!variable_global_exists("build_panel_smooth_x")) {
+  global.build_panel_smooth_x = 0;
+  global.build_panel_smooth_y = 0;
+  global.build_panel_smooth_initialized = false;
+}
+
+if (!variable_global_exists("selected_panel_smooth_x")) {
+  global.selected_panel_smooth_x = 0;
+  global.selected_panel_smooth_y = 0;
+  global.selected_panel_smooth_initialized = false;
 }
 
 /// @type {Real}
@@ -346,9 +443,42 @@ if (global.build_mode && instance_exists(global.build_base_id)) {
   /// @type {Real}
   var build_panel_height = 456;
   /// @type {Real}
-  var build_panel_x = clamp(base_gui_x + 110, 10, gui_width - build_panel_width - 10);
+  var build_panel_right_x = base_gui_x + 110;
   /// @type {Real}
-  var build_panel_y = clamp(base_gui_y - 132, 10, gui_height - build_panel_height - 10);
+  var build_panel_left_x = base_gui_x - build_panel_width - 110;
+  /// @type {Real}
+  var build_panel_target_x = clamp(build_panel_right_x, 10, gui_width - build_panel_width - 10);
+  if (build_panel_right_x + build_panel_width > gui_width - 10 && build_panel_left_x >= 10) {
+    build_panel_target_x = build_panel_left_x;
+  }
+  /// @type {Real}
+  var build_panel_target_y = clamp(base_gui_y - 132, 10, gui_height - build_panel_height - 10);
+  /// @type {Real}
+  var build_panel_lerp_rate = 0.2;
+  /// @type {Real}
+  var build_panel_snap_distance = 0.5;
+
+  if (!global.build_panel_smooth_initialized) {
+    global.build_panel_smooth_x = build_panel_target_x;
+    global.build_panel_smooth_y = build_panel_target_y;
+    global.build_panel_smooth_initialized = true;
+  }
+
+  global.build_panel_smooth_x = lerp(global.build_panel_smooth_x, build_panel_target_x, build_panel_lerp_rate);
+  global.build_panel_smooth_y = lerp(global.build_panel_smooth_y, build_panel_target_y, build_panel_lerp_rate);
+
+  if (abs(global.build_panel_smooth_x - build_panel_target_x) <= build_panel_snap_distance) {
+    global.build_panel_smooth_x = build_panel_target_x;
+  }
+
+  if (abs(global.build_panel_smooth_y - build_panel_target_y) <= build_panel_snap_distance) {
+    global.build_panel_smooth_y = build_panel_target_y;
+  }
+
+  /// @type {Real}
+  var build_panel_x = global.build_panel_smooth_x;
+  /// @type {Real}
+  var build_panel_y = global.build_panel_smooth_y;
 
   /// @type {Real}
   var build_link_start_x = base_gui_x;
@@ -450,14 +580,30 @@ if (global.build_mode && instance_exists(global.build_base_id)) {
   draw_set_halign(fa_left);
   draw_set_valign(fa_top);
   draw_set_font(fnt_heading);
+  /// @type {String}
+  var build_title_text = "BUILD " + string_upper(scr_get_selected_tower_name());
   draw_set_colour(c_black);
-  draw_text_transformed(build_panel_x + 16 + 2, build_panel_y - 22 + 2, "BUILD TOWER", 2.4, 2.4, 0);
+  draw_text_transformed(build_panel_x + 16 + 2, build_panel_y - 22 + 2, build_title_text, 2.4, 2.4, 0);
   draw_set_colour(c_white);
-  draw_text_transformed(build_panel_x + 16, build_panel_y - 22, "BUILD TOWER", 2.4, 2.4, 0);
+  draw_text_transformed(build_panel_x + 16, build_panel_y - 22, build_title_text, 2.4, 2.4, 0);
 
   draw_set_font(fnt_body);
   draw_set_colour(c_ltgray);
-  draw_text_shadow(build_panel_x + 12, build_panel_y + 34, "Select: [Q]/[E] or [1]-[5]");
+  draw_text_shadow(build_panel_x + 12, build_panel_y + 34, "Select: [Q] / [E] or [1] - [5]");
+
+  /// @type {Real}
+  var build_active_tower_count = game_get_active_tower_count();
+  /// @type {Real}
+  var build_placement_bonus = min(
+    TOWER_PLACEMENT_COST_MAX_BONUS,
+    floor(build_active_tower_count / max(1, TOWER_PLACEMENT_COST_STEP_TOWERS))
+  );
+  draw_set_colour(c_silver);
+  draw_text_shadow(
+    build_panel_x + 12,
+    build_panel_y + 54,
+    "Escalation: +" + string(build_placement_bonus) + " Life (" + string(build_active_tower_count) + " towers active)"
+  );
 
   /// @type {Asset.GMObject|Real}
   var selected_build_object = scr_get_selected_tower_object();
@@ -492,9 +638,11 @@ if (global.build_mode && instance_exists(global.build_base_id)) {
 
   for (var tower_index = 0; tower_index < 5; tower_index += 1) {
     /// @type {Struct}
-    var tower_description = scr_get_tower_description(tower_index);
+    var tower_description = scr_get_tower_description(tower_index, build_active_tower_count);
     /// @type {Bool}
     var tower_selected = global.selected_tower_type == tower_index;
+    /// @type {Bool}
+    var tower_can_afford = global.player_hp >= tower_description.hp_cost;
     /// @type {Real}
     var row_y = build_rows_start_y + (tower_index * build_row_pitch);
     /// @type {String}
@@ -517,14 +665,23 @@ if (global.build_mode && instance_exists(global.build_base_id)) {
     draw_set_halign(fa_left);
     draw_set_valign(fa_top);
 
-    draw_set_colour(tower_selected ? c_yellow : c_silver);
+    /// @type {Colour}
+    var row_name_colour = tower_description.name_colour;
+    if (tower_selected) {
+      row_name_colour = merge_color(row_name_colour, c_white, 0.3);
+    }
+    if (!tower_can_afford) {
+      row_name_colour = merge_color(c_dkgray, c_gray, 0.55);
+    }
+
+    draw_set_colour(row_name_colour);
     draw_text_shadow(
       build_panel_x + 14,
       row_y,
       row_prefix + "[" + string(tower_index + 1) + "] " + tower_description.name + " | " + tower_description.damage_type + " | R " + string(tower_description.range) + " | " + string(tower_description.hp_cost) + " Life"
     );
 
-    draw_set_colour(tower_selected ? c_white : c_ltgray);
+    draw_set_colour(tower_can_afford ? (tower_selected ? c_white : c_ltgray) : c_gray);
     draw_text_shadow(build_panel_x + 24, row_y + build_row_detail_offset, tower_description.special);
   }
 
@@ -540,7 +697,7 @@ if (global.build_mode && instance_exists(global.build_base_id)) {
 
   draw_set_colour(c_white);
   draw_text_shadow(build_panel_x + 12, build_panel_y + build_panel_height - 85, "Build selected base: [B] or [Enter]");
-  draw_text_shadow(build_panel_x + 12, build_panel_y + build_panel_height - 53, "Click base to change | [RMB]/[Esc] cancel");
+  draw_text_shadow(build_panel_x + 12, build_panel_y + build_panel_height - 53, "Click base to change | [RMB] / [Esc] cancel");
 }
 
 if (!global.build_mode && instance_exists(global.selected_tower_id)) {
@@ -568,12 +725,38 @@ if (!global.build_mode && instance_exists(global.selected_tower_id)) {
   /// @type {Real}
   var selected_panel_left_x = tower_gui_x - selected_panel_width - 110;
   /// @type {Real}
-  var selected_panel_x = clamp(selected_panel_right_x, 10, gui_width - selected_panel_width - 10);
+  var selected_panel_target_x = clamp(selected_panel_right_x, 10, gui_width - selected_panel_width - 10);
   if (selected_panel_right_x + selected_panel_width > gui_width - 10 && selected_panel_left_x >= 10) {
-    selected_panel_x = selected_panel_left_x;
+    selected_panel_target_x = selected_panel_left_x;
   }
   /// @type {Real}
-  var selected_panel_y = clamp(tower_gui_y - 132, 10, gui_height - selected_panel_height - 10);
+  var selected_panel_target_y = clamp(tower_gui_y - 132, 10, gui_height - selected_panel_height - 10);
+  /// @type {Real}
+  var selected_panel_lerp_rate = 0.22;
+  /// @type {Real}
+  var selected_panel_snap_distance = 0.5;
+
+  if (!global.selected_panel_smooth_initialized) {
+    global.selected_panel_smooth_x = selected_panel_target_x;
+    global.selected_panel_smooth_y = selected_panel_target_y;
+    global.selected_panel_smooth_initialized = true;
+  }
+
+  global.selected_panel_smooth_x = lerp(global.selected_panel_smooth_x, selected_panel_target_x, selected_panel_lerp_rate);
+  global.selected_panel_smooth_y = lerp(global.selected_panel_smooth_y, selected_panel_target_y, selected_panel_lerp_rate);
+
+  if (abs(global.selected_panel_smooth_x - selected_panel_target_x) <= selected_panel_snap_distance) {
+    global.selected_panel_smooth_x = selected_panel_target_x;
+  }
+
+  if (abs(global.selected_panel_smooth_y - selected_panel_target_y) <= selected_panel_snap_distance) {
+    global.selected_panel_smooth_y = selected_panel_target_y;
+  }
+
+  /// @type {Real}
+  var selected_panel_x = global.selected_panel_smooth_x;
+  /// @type {Real}
+  var selected_panel_y = global.selected_panel_smooth_y;
 
   /// @type {Real}
   var selected_link_start_x = tower_gui_x;
@@ -598,9 +781,9 @@ if (!global.build_mode && instance_exists(global.selected_tower_id)) {
   /// @type {Real}
   var selected_link_tip_alpha = 0;
   /// @type {Real}
-  var selected_link_core_alpha = 0.3;
+  var selected_link_core_alpha = 0.48;
   /// @type {Real}
-  var selected_link_outer_alpha = 0.06;
+  var selected_link_outer_alpha = 0.14;
   /// @type {Real}
   var selected_link_falloff_steps = 8;
 
@@ -735,8 +918,8 @@ if (!global.build_mode && instance_exists(global.selected_tower_id)) {
   draw_text_shadow(selected_panel_x + panel_inner_pad, selected_panel_y + 12 + (panel_row_gap * 5), selected_upgrade_text);
   draw_set_colour(c_orange);
   /// @type {Real}
-  var selected_delete_refund_hp = variable_instance_exists(global.selected_tower_id, "tower_placement_hp_cost") ? global.selected_tower_id.tower_placement_hp_cost : TOWER_PLACEMENT_HP_COST;
-  draw_text_shadow(selected_panel_x + panel_inner_pad, selected_panel_y + 12 + (panel_row_gap * 6), "[X] Delete: +" + string(selected_delete_refund_hp) + " Life");
+  var selected_delete_refund_hp = variable_instance_exists(global.selected_tower_id, "tower_placement_hp_cost") ? global.selected_tower_id.tower_placement_hp_cost : scr_get_tower_base_hp_cost(selected_tower_type_index);
+  draw_text_shadow(selected_panel_x + panel_inner_pad, selected_panel_y + 12 + (panel_row_gap * 6), "[X] Delete: Refund +" + string(selected_delete_refund_hp) + " Life (paid amount)");
 
   if (global.confirm_action != "") {
     /// @type {Real}
@@ -854,6 +1037,15 @@ if (global.game_state == GAME_STATE_INTRO) {
   draw_set_colour(make_color_rgb(255, 146, 140));
   draw_text_shadow(intro_center_x, intro_panel_y + 84, "Overbuild and you bleed Life. Underbuild and leaks bleed it anyway.");
 
+  /// @type {Real}
+  var intro_base_arrow_cost = game_get_tower_placement_hp_cost(0, 0);
+  /// @type {Real}
+  var intro_base_standard_cost = game_get_tower_placement_hp_cost(1, 0);
+  /// @type {Real}
+  var intro_escalation_step_towers = max(1, TOWER_PLACEMENT_COST_STEP_TOWERS);
+  /// @type {Real}
+  var intro_escalation_max_bonus = max(0, TOWER_PLACEMENT_COST_MAX_BONUS);
+
   for (var intro_step_index = 0; intro_step_index < 3; intro_step_index += 1) {
     /// @type {Real}
     var intro_card_x = intro_panel_x + intro_card_outer_margin;
@@ -893,19 +1085,19 @@ if (global.game_state == GAME_STATE_INTRO) {
       case 0:
         intro_step_title = "1) Spend Life";
         intro_step_line_top = "Place towers by paying Life upfront.";
-        intro_step_line_bottom = "No Life left means no new defenses.";
+        intro_step_line_bottom = "+1 cost every " + string(intro_escalation_step_towers) + " towers (max +" + string(intro_escalation_max_bonus) + ").";
         intro_step_colour = make_color_rgb(255, 134, 198);
         break;
       case 1:
         intro_step_title = "2) Hold The Path";
         intro_step_line_top = "Leaks cost Life.";
-        intro_step_line_bottom = "Kills grant Coins for upgrades.";
+        intro_step_line_bottom = "Watch Next Wave and Boss timer in HUD.";
         intro_step_colour = c_aqua;
         break;
       case 2:
         intro_step_title = "3) Reinvest Or Recover";
         intro_step_line_top = "Spend Coins with [U] to scale power.";
-        intro_step_line_bottom = "Delete with [X] to reclaim Life only.";
+        intro_step_line_bottom = "Delete with [X] to reclaim paid Life only.";
         intro_step_colour = c_yellow;
         break;
     }
@@ -951,13 +1143,17 @@ if (global.game_state == GAME_STATE_INTRO) {
     draw_set_colour(c_ltgray);
     switch (intro_step_index) {
       case 0:
-        draw_text_shadow(intro_card_center_x, intro_subline_y, "-" + string(TOWER_PLACEMENT_HP_COST) + " Life");
+        draw_text_shadow(
+          intro_card_center_x,
+          intro_subline_y,
+          "Start " + string(STARTING_HP) + " Life | Arrow " + string(intro_base_arrow_cost) + " | Others " + string(intro_base_standard_cost)
+        );
         break;
       case 1:
-        draw_text_shadow(intro_card_center_x, intro_subline_y, "Enemy leak <-> coin reward");
+        draw_text_shadow(intro_card_center_x, intro_subline_y, "Leaks -> Life loss | Kills -> Coins");
         break;
       case 2:
-        draw_text_shadow(intro_card_center_x, intro_subline_y, "[U] upgrades | [X] returns Life");
+        draw_text_shadow(intro_card_center_x, intro_subline_y, "[U] upgrades (Coins) | [X] refund (Life)");
         break;
     }
 
@@ -975,6 +1171,29 @@ if (global.game_state == GAME_STATE_INTRO) {
   draw_set_font(fnt_body);
   draw_set_colour(c_white);
   draw_text_shadow(intro_center_x, intro_panel_y + intro_panel_height - 56, continue_prompt);
+}
+
+/// Draw a short red edge pulse when enemies leak Life.
+if (variable_global_exists("leak_edge_flash_steps_remaining") && global.leak_edge_flash_steps_remaining > 0) {
+  /// @type {Real}
+  var leak_flash_total_steps = max(1, round(LEAK_EDGE_FLASH_SECONDS * room_speed));
+  /// @type {Real}
+  var leak_flash_t = clamp(global.leak_edge_flash_steps_remaining / leak_flash_total_steps, 0, 1);
+  /// @type {Real}
+  var leak_flash_alpha = LEAK_EDGE_FLASH_MAX_ALPHA * leak_flash_t;
+  /// @type {Real}
+  var leak_flash_edge = clamp(LEAK_EDGE_FLASH_EDGE_PX, 4, floor(min(gui_width, gui_height) * 0.25));
+
+  gpu_set_blendmode(bm_add);
+  draw_set_alpha(leak_flash_alpha);
+  draw_set_colour(make_color_rgb(255, 48, 64));
+  draw_rectangle(0, 0, gui_width, leak_flash_edge, false);
+  draw_rectangle(0, gui_height - leak_flash_edge, gui_width, gui_height, false);
+  draw_rectangle(0, 0, leak_flash_edge, gui_height, false);
+  draw_rectangle(gui_width - leak_flash_edge, 0, gui_width, gui_height, false);
+  gpu_set_blendmode(bm_normal);
+  draw_set_alpha(1);
+  draw_set_colour(c_white);
 }
 
 if (global.game_state == GAME_STATE_GAME_OVER) {

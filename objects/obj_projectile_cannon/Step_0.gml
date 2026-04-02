@@ -22,6 +22,7 @@ y += lengthdir_y(proj_speed, direction_to_target);
 if (point_distance(x, y, proj_target_x, proj_target_y) > proj_speed + 1) exit;
 
 audio_play_variation(WAV_Bomb_Explosion_Small_1, WAV_Bomb_Explosion_Small_2, AUDIO_GAIN_COMBAT, 0.94, 1.04);
+game_decals_stamp_quake(proj_target_x, proj_target_y, proj_radius);
 
 with (obj_enemy_parent) {
   if (is_dead || has_leaked) continue;
