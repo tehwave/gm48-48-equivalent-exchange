@@ -27,6 +27,7 @@ tower_attack_vfx_angle_offset = 0;
 tower_attack_vfx_distance = 0;
 tower_attack_vfx_origin_lift = 0;
 tower_attack_vfx_origin_forward = 0;
+tower_attack_vfx_start_fraction = 0;
 tower_attack_vfx_draw_above_tower = true;
 
 tower_spawn_anim_steps_total = max(1, round(room_speed * 0.30));
@@ -86,6 +87,7 @@ if (object_index == obj_tower_arrow) {
 	tower_attack_vfx_distance = 14;
 	tower_attack_vfx_origin_lift = -12;
 	tower_attack_vfx_origin_forward = 10;
+	tower_attack_vfx_start_fraction = 0.58;
 	tower_attack_vfx_draw_above_tower = false;
 	tower_sprite_scale = 0.84;
 } else if (freeze_object != -1 && object_index == freeze_object) {
