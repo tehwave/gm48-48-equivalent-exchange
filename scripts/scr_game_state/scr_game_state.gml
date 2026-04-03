@@ -464,8 +464,20 @@ function game_value_fx_format_amount(amount) {
 /// @returns {Void}
 function game_enqueue_value_fx(value_text, category, anchor_mode, anchor_x, anchor_y, lifetime_steps, x_spread, main_colour) {
   if (!variable_global_exists("value_fx_popups")) {
-    /// @type {Array<Struct>}
-    global.value_fx_popups = [];
+    /// @type {Array<Struct|Undefined>}
+    global.value_fx_popups = array_create(VALUE_FX_MAX_ACTIVE, undefined);
+  }
+
+  if (!variable_global_exists("value_fx_popup_cursor")) {
+    global.value_fx_popup_cursor = 0;
+  }
+
+  if (!variable_global_exists("value_fx_debug_enqueued_total")) {
+    global.value_fx_debug_enqueued_total = 0;
+  }
+
+  if (!variable_global_exists("value_fx_debug_overwrite_live_total")) {
+    global.value_fx_debug_overwrite_live_total = 0;
   }
 
   if (string_length(value_text) <= 0) return;
@@ -477,35 +489,35 @@ function game_enqueue_value_fx(value_text, category, anchor_mode, anchor_x, anch
   /// @type {Real}
   var popup_main_colour = (argument_count >= 8) ? main_colour : -1;
 
-  /// @type {Struct}
-  var value_popup = {
-    value_text : value_text,
-    category : category,
-    anchor_mode : anchor_mode,
-    anchor_x : anchor_x,
-    anchor_y : anchor_y,
-    offset_x : (popup_x_spread > 0) ? random_range(-popup_x_spread, popup_x_spread) : 0,
-    main_colour : popup_main_colour,
-    life : popup_life_steps,
-    max_life : popup_life_steps
-  };
-
-  array_push(global.value_fx_popups, value_popup);
-
   /// @type {Real}
-  var popup_count = array_length(global.value_fx_popups);
-  if (popup_count > VALUE_FX_MAX_ACTIVE) {
-    /// @type {Array<Struct>}
-    var trimmed_popups = [];
-    /// @type {Real}
-    var trim_start = popup_count - VALUE_FX_MAX_ACTIVE;
+  var popup_slot_count = max(1, VALUE_FX_MAX_ACTIVE);
+  /// @type {Real}
+  var popup_slot_index = floor(global.value_fx_popup_cursor) mod popup_slot_count;
+  if (popup_slot_index < 0) popup_slot_index += popup_slot_count;
 
-    for (var trim_index = trim_start; trim_index < popup_count; trim_index += 1) {
-      array_push(trimmed_popups, global.value_fx_popups[trim_index]);
-    }
-
-    global.value_fx_popups = trimmed_popups;
+  /// @type {Struct|Undefined}
+  var value_popup = global.value_fx_popups[popup_slot_index];
+  if (!is_undefined(value_popup) && is_struct(value_popup) && variable_struct_exists(value_popup, "life") && value_popup.life > 0) {
+    global.value_fx_debug_overwrite_live_total += 1;
   }
+
+  if (is_undefined(value_popup) || !is_struct(value_popup)) {
+    value_popup = {};
+  }
+
+  value_popup.value_text = value_text;
+  value_popup.category = category;
+  value_popup.anchor_mode = anchor_mode;
+  value_popup.anchor_x = anchor_x;
+  value_popup.anchor_y = anchor_y;
+  value_popup.offset_x = (popup_x_spread > 0) ? random_range(-popup_x_spread, popup_x_spread) : 0;
+  value_popup.main_colour = popup_main_colour;
+  value_popup.life = popup_life_steps;
+  value_popup.max_life = popup_life_steps;
+
+  global.value_fx_popups[popup_slot_index] = value_popup;
+  global.value_fx_popup_cursor = (popup_slot_index + 1) mod popup_slot_count;
+  global.value_fx_debug_enqueued_total += 1;
 }
 
 /// @returns {Real}
@@ -1011,20 +1023,13 @@ function game_damage_popup_colour_from_source(source_tower_id) {
 /// @param {Id.Instance} enemy_instance
 /// @param {Real} damage
 /// @param {Id.Instance|Real} source_tower_id
-/// @param {Bool} show_popup
 /// @returns {Bool}
-function enemy_take_damage(enemy_instance, damage, source_tower_id, show_popup) {
+function enemy_take_damage(enemy_instance, damage, source_tower_id) {
   if (!instance_exists(enemy_instance)) return false;
   if (damage <= 0) return false;
 
-  /// @type {Bool}
-  var popup_enabled = true;
-
   if (argument_count < 3) {
     source_tower_id = noone;
-  }
-  if (argument_count >= 4) {
-    popup_enabled = show_popup;
   }
 
   /// @type {Bool}
@@ -1043,26 +1048,16 @@ function enemy_take_damage(enemy_instance, damage, source_tower_id, show_popup) 
   }
 
   enemy_register_hit_feedback(enemy_instance, damage);
-
-  if (
-    popup_enabled
-    && (!variable_instance_exists(enemy_instance, "enemy_damage_popup_cooldown_steps_remaining") || enemy_instance.enemy_damage_popup_cooldown_steps_remaining <= 0)
-  ) {
-    game_enqueue_value_fx(
-      game_value_fx_format_amount(damage),
-      VALUE_FX_CATEGORY_DAMAGE,
-      VALUE_FX_ANCHOR_WORLD,
-      enemy_instance.x,
-      enemy_instance.y,
-      VALUE_FX_DAMAGE_LIFE_STEPS,
-      12,
-      game_damage_popup_colour_from_source(source_tower_id)
-    );
-
-    if (variable_instance_exists(enemy_instance, "enemy_damage_popup_cooldown_steps_total")) {
-      enemy_instance.enemy_damage_popup_cooldown_steps_remaining = enemy_instance.enemy_damage_popup_cooldown_steps_total;
-    }
-  }
+  game_enqueue_value_fx(
+    game_value_fx_format_amount(damage),
+    VALUE_FX_CATEGORY_DAMAGE,
+    VALUE_FX_ANCHOR_WORLD,
+    enemy_instance.x,
+    enemy_instance.y,
+    VALUE_FX_DAMAGE_LIFE_STEPS,
+    12,
+    game_damage_popup_colour_from_source(source_tower_id)
+  );
 
   return true;
 }

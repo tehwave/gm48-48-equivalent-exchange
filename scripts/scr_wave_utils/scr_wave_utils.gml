@@ -10,7 +10,8 @@ function scr_wave_enemy_count(wave_index) {
     enemy_count += WAVE_EARLY_PRESSURE_BONUS;
   }
 
-  return enemy_count;
+  enemy_count = round(enemy_count * WAVE_ENEMY_COUNT_MULTIPLIER);
+  return max(1, enemy_count);
 }
 
 /// @param {Real} wave_index

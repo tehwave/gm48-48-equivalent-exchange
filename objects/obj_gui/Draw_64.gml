@@ -270,8 +270,32 @@ if (!variable_global_exists("coin_hud_pop_steps")) {
 }
 
 if (!variable_global_exists("value_fx_popups")) {
-  /// @type {Array<Struct>}
-  global.value_fx_popups = [];
+  /// @type {Array<Struct|Undefined>}
+  global.value_fx_popups = array_create(VALUE_FX_MAX_ACTIVE, undefined);
+}
+
+if (!variable_global_exists("value_fx_popup_cursor")) {
+  global.value_fx_popup_cursor = 0;
+}
+
+if (!variable_global_exists("value_fx_debug_enqueued_total")) {
+  global.value_fx_debug_enqueued_total = 0;
+}
+
+if (!variable_global_exists("value_fx_debug_overwrite_live_total")) {
+  global.value_fx_debug_overwrite_live_total = 0;
+}
+
+if (!variable_global_exists("value_fx_debug_active_count")) {
+  global.value_fx_debug_active_count = 0;
+}
+
+if (!variable_global_exists("value_fx_debug_drawn_count")) {
+  global.value_fx_debug_drawn_count = 0;
+}
+
+if (!variable_global_exists("value_fx_debug_allocated_slots")) {
+  global.value_fx_debug_allocated_slots = 0;
 }
 
 if (!variable_global_exists("coin_spend_particles")) {
@@ -326,10 +350,14 @@ if (global.coin_hud_pop_steps > 0) {
 }
 
 /// Draw all floating value effects through one generic world/gui renderer.
-/// @type {Array<Struct>}
-var active_value_fx_popups = [];
 /// @type {Real}
 var value_fx_popup_count = array_length(global.value_fx_popups);
+/// @type {Real}
+var value_fx_debug_active_count = 0;
+/// @type {Real}
+var value_fx_debug_drawn_count = 0;
+/// @type {Real}
+var value_fx_debug_allocated_slots = 0;
 /// @type {Real}
 var value_fx_camera_id = view_camera[0];
 /// @type {Real}
@@ -353,11 +381,18 @@ draw_set_font(fnt_body);
 draw_set_halign(fa_center);
 draw_set_valign(fa_middle);
 for (var value_fx_index = 0; value_fx_index < value_fx_popup_count; value_fx_index += 1) {
-  /// @type {Struct}
+  /// @type {Struct|Undefined}
   var value_fx = global.value_fx_popups[value_fx_index];
+  if (is_undefined(value_fx)) continue;
+  if (!is_struct(value_fx)) continue;
+  if (!variable_struct_exists(value_fx, "life")) continue;
+  value_fx_debug_allocated_slots += 1;
+
   value_fx.life -= 1;
 
   if (value_fx.life > 0) {
+    value_fx_debug_active_count += 1;
+    value_fx_debug_drawn_count += 1;
     /// @type {Real}
     var value_fx_t = 1 - (value_fx.life / max(1, value_fx.max_life));
     /// @type {Real}
@@ -423,7 +458,6 @@ for (var value_fx_index = 0; value_fx_index < value_fx_popup_count; value_fx_ind
     draw_set_colour(value_fx_main_colour);
     draw_text_transformed(value_fx_gui_x, value_fx_gui_y, value_fx.value_text, value_fx_scale, value_fx_scale, 0);
 
-    array_push(active_value_fx_popups, value_fx);
   }
 }
 
@@ -431,7 +465,9 @@ draw_set_alpha(1);
 draw_set_colour(c_white);
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
-global.value_fx_popups = active_value_fx_popups;
+global.value_fx_debug_active_count = value_fx_debug_active_count;
+global.value_fx_debug_drawn_count = value_fx_debug_drawn_count;
+global.value_fx_debug_allocated_slots = value_fx_debug_allocated_slots;
 
 /// Convert queued spend bursts into immediate exploding coin particles.
 /// @type {Real}
@@ -651,6 +687,49 @@ draw_text_shadow(
   (audio_ui_layout.value_y1 + audio_ui_layout.value_y2) * 0.5,
   "Vol: " + string(volume_percent) + "%"
 );
+
+if (global.debug_mode) {
+  /// @type {Real}
+  var fx_debug_panel_x = audio_ui_layout.panel_x;
+  /// @type {Real}
+  var fx_debug_panel_width = 272;
+  /// @type {Real}
+  var fx_debug_panel_height = 96;
+  /// @type {Real}
+  var fx_debug_panel_y = max(16, audio_ui_layout.panel_y - fx_debug_panel_height - 10);
+
+  scr_draw_rounded_panel(
+    fx_debug_panel_x,
+    fx_debug_panel_y,
+    fx_debug_panel_width,
+    fx_debug_panel_height,
+    0.44,
+    10
+  );
+
+  draw_set_font(fnt_body);
+  draw_set_halign(fa_left);
+  draw_set_valign(fa_top);
+  draw_set_colour(c_yellow);
+  draw_text_shadow(fx_debug_panel_x + 10, fx_debug_panel_y + 8, "Value FX Pool");
+
+  draw_set_colour(c_white);
+  draw_text_shadow(
+    fx_debug_panel_x + 10,
+    fx_debug_panel_y + 28,
+    "Active " + string(global.value_fx_debug_active_count) + "/" + string(VALUE_FX_MAX_ACTIVE)
+  );
+  draw_text_shadow(
+    fx_debug_panel_x + 10,
+    fx_debug_panel_y + 46,
+    "Drawn " + string(global.value_fx_debug_drawn_count) + " | Alloc " + string(global.value_fx_debug_allocated_slots)
+  );
+  draw_text_shadow(
+    fx_debug_panel_x + 10,
+    fx_debug_panel_y + 64,
+    "Enq " + string(global.value_fx_debug_enqueued_total) + " | OverwriteLive " + string(global.value_fx_debug_overwrite_live_total)
+  );
+}
 
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
