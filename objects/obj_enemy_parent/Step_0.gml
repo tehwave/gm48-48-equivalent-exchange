@@ -37,6 +37,10 @@ if (enemy_hit_audio_cooldown_steps_remaining > 0) {
   enemy_hit_audio_cooldown_steps_remaining -= 1;
 }
 
+if (enemy_damage_popup_cooldown_steps_remaining > 0) {
+  enemy_damage_popup_cooldown_steps_remaining -= 1;
+}
+
 if (enemy_status_slow_decal_cooldown_steps_remaining > 0) {
   enemy_status_slow_decal_cooldown_steps_remaining -= 1;
 }
@@ -54,7 +58,7 @@ if (enemy_burn_timer_steps > 0) {
   enemy_burn_tick_steps_remaining -= 1;
 
   if (enemy_burn_tick_steps_remaining <= 0) {
-    enemy_take_damage(id, enemy_burn_damage_per_tick, enemy_last_damage_source);
+    enemy_take_damage(id, enemy_burn_damage_per_tick, enemy_last_damage_source, false);
     enemy_burn_tick_steps_remaining = max(1, round(ENEMY_BURN_TICK_SECONDS * room_speed));
   }
 } else {

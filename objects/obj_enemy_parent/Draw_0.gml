@@ -26,13 +26,25 @@ if (is_dead) {
 
 /// Basic ground blob shadow for readability.
 /// @type {Real}
-var shadow_boss_scale = (object_index == obj_enemy_boss) ? 1.45 : 1;
+var shadow_wide_width_scale = (
+	object_index == obj_enemy_boss ||
+	sprite_index == spr_spider_blue ||
+	sprite_index == spr_spider_green ||
+	sprite_index == spr_spider_purple
+) ? 1.75 : 1;
+/// @type {Real}
+var shadow_wide_height_scale = (
+	object_index == obj_enemy_boss ||
+	sprite_index == spr_spider_blue ||
+	sprite_index == spr_spider_green ||
+	sprite_index == spr_spider_purple
+) ? 1.45 : 1;
 /// @type {Real}
 var shadow_phase = (current_time * 0.018) + (draw_x * 0.06) + (draw_y * 0.04);
 /// @type {Real}
-var shadow_radius_x = (enemy_draw_radius * 1.5 * shadow_boss_scale) + (1.26 * sin(shadow_phase));
+var shadow_radius_x = (enemy_draw_radius * 1.5 * shadow_wide_width_scale) + (1.26 * sin(shadow_phase));
 /// @type {Real}
-var shadow_radius_y = (enemy_draw_radius * 0.45 * shadow_boss_scale) + (0.2 * sin(shadow_phase));
+var shadow_radius_y = (enemy_draw_radius * 0.45 * shadow_wide_height_scale) + (0.2 * sin(shadow_phase));
 /// @type {Real}
 var shadow_center_x = draw_x + 1;
 /// @type {Real}

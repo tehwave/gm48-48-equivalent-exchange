@@ -585,9 +585,6 @@ draw_roundrect_ext(
   7,
   false
 );
-
-draw_set_alpha(0.24);
-draw_set_colour(c_black);
 draw_roundrect_ext(
   audio_ui_layout.value_x1,
   audio_ui_layout.value_y1,
@@ -652,7 +649,7 @@ draw_set_colour(global.audio_master_muted ? c_silver : c_white);
 draw_text_shadow(
   (audio_ui_layout.value_x1 + audio_ui_layout.value_x2) * 0.5,
   (audio_ui_layout.value_y1 + audio_ui_layout.value_y2) * 0.5,
-  "Vol:" + string(volume_percent) + "%"
+  "Vol: " + string(volume_percent) + "%"
 );
 
 draw_set_halign(fa_left);
@@ -1263,7 +1260,9 @@ if (global.game_state == GAME_STATE_INTRO) {
   draw_set_colour(c_black);
   draw_rectangle(0, 0, intro_gui_width, intro_gui_height, false);
 
-  draw_set_alpha(0.74);
+  scr_draw_panel_blur_backdrop(intro_panel_x, intro_panel_y, intro_panel_width, intro_panel_height, true);
+  draw_set_alpha(0.62);
+  draw_set_colour(c_black);
   draw_roundrect_ext(intro_panel_x, intro_panel_y, intro_panel_x + intro_panel_width, intro_panel_y + intro_panel_height, 24, 24, false);
   draw_set_alpha(1);
   draw_set_colour(c_white);
@@ -1434,7 +1433,11 @@ if (global.game_state == GAME_STATE_GAME_OVER) {
   /// @type {Real}
   var elapsed_remainder_seconds = elapsed_seconds mod 60;
   /// @type {String}
-  var run_time_text = string(elapsed_minutes) + ":" + string_format(elapsed_remainder_seconds, 2, 0);
+  var elapsed_minutes_text = (elapsed_minutes < 10) ? ("0" + string(elapsed_minutes)) : string(elapsed_minutes);
+  /// @type {String}
+  var elapsed_seconds_text = (elapsed_remainder_seconds < 10) ? ("0" + string(elapsed_remainder_seconds)) : string(elapsed_remainder_seconds);
+  /// @type {String}
+  var run_time_text = elapsed_minutes_text + ":" + elapsed_seconds_text;
   /// @type {Real}
   var end_center_x = display_get_gui_width() * 0.5;
   /// @type {Real}
@@ -1484,7 +1487,11 @@ if (global.game_state == GAME_STATE_VICTORY) {
   /// @type {Real}
   var victory_elapsed_remainder_seconds = victory_elapsed_seconds mod 60;
   /// @type {String}
-  var victory_run_time_text = string(victory_elapsed_minutes) + ":" + string_format(victory_elapsed_remainder_seconds, 2, 0);
+  var victory_elapsed_minutes_text = (victory_elapsed_minutes < 10) ? ("0" + string(victory_elapsed_minutes)) : string(victory_elapsed_minutes);
+  /// @type {String}
+  var victory_elapsed_seconds_text = (victory_elapsed_remainder_seconds < 10) ? ("0" + string(victory_elapsed_remainder_seconds)) : string(victory_elapsed_remainder_seconds);
+  /// @type {String}
+  var victory_run_time_text = victory_elapsed_minutes_text + ":" + victory_elapsed_seconds_text;
   /// @type {Real}
   var victory_center_x = display_get_gui_width() * 0.5;
   /// @type {Real}

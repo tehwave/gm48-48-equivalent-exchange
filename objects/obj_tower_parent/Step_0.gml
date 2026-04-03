@@ -158,8 +158,22 @@ if (object_index == obj_tower_arrow) {
 
   /// @type {Real}
   var half_cone_angle = tower_cone_angle * 0.5;
-  /// @type {DS.List}
-  var hit_enemy_ids = ds_list_create();
+  /// @type {Real}
+  var cone_cos = dcos(half_cone_angle);
+  /// @type {Real}
+  var cone_cos_squared = cone_cos * cone_cos;
+  /// @type {Real}
+  var forward_x = lengthdir_x(1, tower_attack_vfx_angle);
+  /// @type {Real}
+  var forward_y = lengthdir_y(1, tower_attack_vfx_angle);
+  /// @type {DS.List|Real}
+  var hit_enemy_ids = tower_flamer_hit_enemy_ids;
+  if (!ds_exists(hit_enemy_ids, ds_type_list)) {
+    hit_enemy_ids = ds_list_create();
+    tower_flamer_hit_enemy_ids = hit_enemy_ids;
+  } else {
+    ds_list_clear(hit_enemy_ids);
+  }
   /// @type {Real}
   var hit_count = collision_circle_list(x, y, tower_range, obj_enemy_parent, false, false, hit_enemy_ids, false);
 
@@ -170,14 +184,20 @@ if (object_index == obj_tower_arrow) {
     if (enemy_id.is_dead || enemy_id.has_leaked) continue;
 
     /// @type {Real}
-    var enemy_angle = point_direction(x, y, enemy_id.x, enemy_id.y);
-    if (abs(angle_difference(enemy_angle, tower_attack_vfx_angle)) > half_cone_angle) continue;
+    var delta_x = enemy_id.x - x;
+    /// @type {Real}
+    var delta_y = enemy_id.y - y;
+    /// @type {Real}
+    var dot = (delta_x * forward_x) + (delta_y * forward_y);
+    if (dot <= 0) continue;
+
+    /// @type {Real}
+    var dist_squared = (delta_x * delta_x) + (delta_y * delta_y);
+    if ((dot * dot) < (dist_squared * cone_cos_squared)) continue;
 
     enemy_take_damage(enemy_id, tower_damage, id);
     enemy_apply_burn(enemy_id, tower_burn_damage_per_tick, tower_burn_duration_steps);
   }
-
-  ds_list_destroy(hit_enemy_ids);
 } else if (tower_is_freeze) {
   audio_play_one_shot(WAV_Lightning_Swoosh_1, AUDIO_GAIN_COMBAT, 0.98, 1.02);
   enemy_take_damage(target_id, tower_damage, id);

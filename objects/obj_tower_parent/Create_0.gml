@@ -44,6 +44,7 @@ tower_fire_recoil_steps_remaining = 0;
 tower_fire_wiggle_dir = choose(-1, 1);
 tower_is_flamer = false;
 tower_is_freeze = false;
+tower_flamer_hit_enemy_ids = noone;
 
 base_owner_id = variable_instance_exists(id, "base_owner_id") ? base_owner_id : noone;
 
@@ -100,6 +101,10 @@ if (object_index == obj_tower_arrow) {
 	tower_attack_vfx_angle_offset = 0;
 	tower_attack_vfx_distance = 12;
 	tower_sprite_scale = 0.84;
+}
+
+if (tower_is_flamer) {
+	tower_flamer_hit_enemy_ids = ds_list_create();
 }
 
 tower_base_scale = tower_sprite_scale;

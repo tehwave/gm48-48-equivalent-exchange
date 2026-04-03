@@ -9,11 +9,13 @@ function game_is_running() {
 /// @param {Real} py
 /// @param {Real} pw
 /// @param {Real} ph
+/// @param {Bool} allow_large_panel
 /// @returns {Void}
-function scr_draw_panel_blur_backdrop(px, py, pw, ph) {
+function scr_draw_panel_blur_backdrop(px, py, pw, ph, allow_large_panel) {
   if (PANEL_BLUR_ENABLED != 1) return;
   if (pw <= 0 || ph <= 0) return;
   if (!surface_exists(application_surface)) return;
+  if (is_undefined(allow_large_panel)) allow_large_panel = false;
 
   /// Keep expensive blur passes off very large overlays.
   /// @type {Real}
@@ -22,7 +24,7 @@ function scr_draw_panel_blur_backdrop(px, py, pw, ph) {
   var gui_height = max(1, display_get_gui_height());
   /// @type {Real}
   var panel_area_ratio = (pw * ph) / (gui_width * gui_height);
-  if (panel_area_ratio > PANEL_BLUR_MAX_AREA_RATIO) return;
+  if (!allow_large_panel && panel_area_ratio > PANEL_BLUR_MAX_AREA_RATIO) return;
 
   /// @type {Real}
   var app_surface_width = max(1, surface_get_width(application_surface));
@@ -221,6 +223,178 @@ function draw_text_shadow_ext(x, y, text, sep, width, shadow_offset_x, shadow_of
   draw_text_ext(x + shadow_offset_x, y + shadow_offset_y, text, sep, width);
   draw_set_colour(main_colour);
   draw_text_ext(x, y, text, sep, width);
+}
+
+/// @description Resolves range indicator style for a tower object.
+/// @param {Asset.GMObject|Real} tower_object
+/// @returns {Real}
+function scr_get_tower_range_indicator_style(tower_object) {
+  /// @type {Asset.GMObject|Real}
+  var flamer_object = asset_get_index("obj_tower_flamer");
+  /// @type {Asset.GMObject|Real}
+  var freeze_object = asset_get_index("obj_tower_freeze");
+
+  if (flamer_object != -1 && tower_object == flamer_object) return 3;
+  if (tower_object == obj_tower_cannon) return 1;
+  if (tower_object == obj_tower_slow || (freeze_object != -1 && tower_object == freeze_object)) return 2;
+
+  return 0;
+}
+
+/// @description Draws a stylized tower range indicator ring.
+/// @param {Real} center_x
+/// @param {Real} center_y
+/// @param {Real} ring_radius
+/// @param {Real} range_style
+/// @param {Colour} range_colour
+/// @param {Bool} use_add_blend
+/// @returns {Void}
+function scr_draw_tower_range_indicator(center_x, center_y, ring_radius, range_style, range_colour, use_add_blend) {
+  if (ring_radius <= 0) return;
+  if (is_undefined(use_add_blend)) use_add_blend = false;
+
+  /// @type {Real}
+  var aura_alpha = 0.34;
+  /// @type {Real}
+  var ring_alpha = 0.62;
+  /// @type {Real}
+  var ring_thickness = max(2, ring_radius * 0.2);
+  /// @type {Real}
+  var ring_start = max(1, ring_radius - (ring_thickness * 0.5));
+  /// @type {Real}
+  var ring_end = ring_radius + (ring_thickness * 0.5);
+
+  if (use_add_blend) gpu_set_blendmode(bm_add);
+
+  draw_set_colour(range_colour);
+  draw_set_alpha(aura_alpha);
+  if (range_style == 1) {
+    /// @type {Real}
+    var dash_step = 10;
+    /// @type {Real}
+    var dash_length = 6;
+    for (var ring_step = ring_start; ring_step <= ring_end; ring_step += 1) {
+      for (var dash_angle = 0; dash_angle < 360; dash_angle += dash_step) {
+        if (((dash_angle div dash_step) mod 2) != 0) continue;
+        draw_line(
+          center_x + lengthdir_x(ring_step, dash_angle),
+          center_y + lengthdir_y(ring_step, dash_angle),
+          center_x + lengthdir_x(ring_step, dash_angle + dash_length),
+          center_y + lengthdir_y(ring_step, dash_angle + dash_length)
+        );
+      }
+    }
+  } else if (range_style == 2) {
+    /// @type {Real}
+    var dot_step = 16;
+    /// @type {Real}
+    var dot_radius = 1.25;
+    for (var ring_dot_step = ring_start; ring_dot_step <= ring_end; ring_dot_step += 1) {
+      for (var dot_angle = 0; dot_angle < 360; dot_angle += dot_step) {
+        draw_circle(
+          center_x + lengthdir_x(ring_dot_step, dot_angle),
+          center_y + lengthdir_y(ring_dot_step, dot_angle),
+          dot_radius,
+          true
+        );
+      }
+    }
+  } else if (range_style == 3) {
+    /// @type {Real}
+    var triangle_step = 18;
+    /// @type {Real}
+    var triangle_tip_offset = 4.2;
+    /// @type {Real}
+    var triangle_inner_offset = 2.6;
+    /// @type {Real}
+    var triangle_base_half_width = 3.1;
+    for (var ring_triangle_step = ring_start; ring_triangle_step <= ring_end; ring_triangle_step += 1) {
+      for (var triangle_angle = 0; triangle_angle < 360; triangle_angle += triangle_step) {
+        if (((triangle_angle div triangle_step) mod 2) != 0) continue;
+        /// @type {Real}
+        var triangle_tip_x = center_x + lengthdir_x(ring_triangle_step + triangle_tip_offset, triangle_angle);
+        /// @type {Real}
+        var triangle_tip_y = center_y + lengthdir_y(ring_triangle_step + triangle_tip_offset, triangle_angle);
+        /// @type {Real}
+        var triangle_base_center_x = center_x + lengthdir_x(ring_triangle_step - triangle_inner_offset, triangle_angle);
+        /// @type {Real}
+        var triangle_base_center_y = center_y + lengthdir_y(ring_triangle_step - triangle_inner_offset, triangle_angle);
+        /// @type {Real}
+        var triangle_left_x = triangle_base_center_x + lengthdir_x(triangle_base_half_width, triangle_angle + 90);
+        /// @type {Real}
+        var triangle_left_y = triangle_base_center_y + lengthdir_y(triangle_base_half_width, triangle_angle + 90);
+        /// @type {Real}
+        var triangle_right_x = triangle_base_center_x + lengthdir_x(triangle_base_half_width, triangle_angle - 90);
+        /// @type {Real}
+        var triangle_right_y = triangle_base_center_y + lengthdir_y(triangle_base_half_width, triangle_angle - 90);
+        draw_triangle(triangle_tip_x, triangle_tip_y, triangle_left_x, triangle_left_y, triangle_right_x, triangle_right_y, false);
+      }
+    }
+  } else {
+    for (var ring_circle_step = ring_start; ring_circle_step <= ring_end; ring_circle_step += 1) {
+      draw_circle(center_x, center_y, ring_circle_step, true);
+    }
+  }
+
+  draw_set_alpha(ring_alpha);
+  draw_set_colour(c_white);
+  if (range_style == 1) {
+    for (var ring_highlight_step = ring_start; ring_highlight_step <= ring_end; ring_highlight_step += 1) {
+      for (var dash_highlight_angle = 0; dash_highlight_angle < 360; dash_highlight_angle += dash_step) {
+        if (((dash_highlight_angle div dash_step) mod 2) != 0) continue;
+        draw_line(
+          center_x + lengthdir_x(ring_highlight_step - 1, dash_highlight_angle),
+          center_y + lengthdir_y(ring_highlight_step - 1, dash_highlight_angle),
+          center_x + lengthdir_x(ring_highlight_step - 1, dash_highlight_angle + dash_length),
+          center_y + lengthdir_y(ring_highlight_step - 1, dash_highlight_angle + dash_length)
+        );
+      }
+    }
+  } else if (range_style == 2) {
+    for (var ring_highlight_dot_step = ring_start; ring_highlight_dot_step <= ring_end; ring_highlight_dot_step += 1) {
+      for (var highlight_dot_angle = 0; highlight_dot_angle < 360; highlight_dot_angle += dot_step) {
+        draw_circle(
+          center_x + lengthdir_x(ring_highlight_dot_step - 1, highlight_dot_angle),
+          center_y + lengthdir_y(ring_highlight_dot_step - 1, highlight_dot_angle),
+          dot_radius,
+          true
+        );
+      }
+    }
+  } else if (range_style == 3) {
+    for (var ring_highlight_triangle_step = ring_start; ring_highlight_triangle_step <= ring_end; ring_highlight_triangle_step += 1) {
+      for (var highlight_triangle_angle = 0; highlight_triangle_angle < 360; highlight_triangle_angle += triangle_step) {
+        if (((highlight_triangle_angle div triangle_step) mod 2) != 0) continue;
+        /// @type {Real}
+        var highlight_tip_x = center_x + lengthdir_x(ring_highlight_triangle_step + (triangle_tip_offset - 1), highlight_triangle_angle);
+        /// @type {Real}
+        var highlight_tip_y = center_y + lengthdir_y(ring_highlight_triangle_step + (triangle_tip_offset - 1), highlight_triangle_angle);
+        /// @type {Real}
+        var highlight_base_center_x = center_x + lengthdir_x(ring_highlight_triangle_step - (triangle_inner_offset + 1), highlight_triangle_angle);
+        /// @type {Real}
+        var highlight_base_center_y = center_y + lengthdir_y(ring_highlight_triangle_step - (triangle_inner_offset + 1), highlight_triangle_angle);
+        /// @type {Real}
+        var highlight_base_half_width = max(1.2, triangle_base_half_width - 1);
+        /// @type {Real}
+        var highlight_left_x = highlight_base_center_x + lengthdir_x(highlight_base_half_width, highlight_triangle_angle + 90);
+        /// @type {Real}
+        var highlight_left_y = highlight_base_center_y + lengthdir_y(highlight_base_half_width, highlight_triangle_angle + 90);
+        /// @type {Real}
+        var highlight_right_x = highlight_base_center_x + lengthdir_x(highlight_base_half_width, highlight_triangle_angle - 90);
+        /// @type {Real}
+        var highlight_right_y = highlight_base_center_y + lengthdir_y(highlight_base_half_width, highlight_triangle_angle - 90);
+        draw_triangle(highlight_tip_x, highlight_tip_y, highlight_left_x, highlight_left_y, highlight_right_x, highlight_right_y, false);
+      }
+    }
+  } else {
+    for (var ring_highlight_circle_step = ring_start; ring_highlight_circle_step <= ring_end; ring_highlight_circle_step += 1) {
+      draw_circle(center_x, center_y, ring_highlight_circle_step - 1, true);
+    }
+  }
+
+  if (use_add_blend) gpu_set_blendmode(bm_normal);
+  draw_set_alpha(1);
+  draw_set_colour(c_white);
 }
 
 /// @description Returns HUD-space anchor coordinates for value popups.
@@ -837,13 +1011,20 @@ function game_damage_popup_colour_from_source(source_tower_id) {
 /// @param {Id.Instance} enemy_instance
 /// @param {Real} damage
 /// @param {Id.Instance|Real} source_tower_id
+/// @param {Bool} show_popup
 /// @returns {Bool}
-function enemy_take_damage(enemy_instance, damage, source_tower_id) {
+function enemy_take_damage(enemy_instance, damage, source_tower_id, show_popup) {
   if (!instance_exists(enemy_instance)) return false;
   if (damage <= 0) return false;
 
+  /// @type {Bool}
+  var popup_enabled = true;
+
   if (argument_count < 3) {
     source_tower_id = noone;
+  }
+  if (argument_count >= 4) {
+    popup_enabled = show_popup;
   }
 
   /// @type {Bool}
@@ -862,16 +1043,26 @@ function enemy_take_damage(enemy_instance, damage, source_tower_id) {
   }
 
   enemy_register_hit_feedback(enemy_instance, damage);
-  game_enqueue_value_fx(
-    game_value_fx_format_amount(damage),
-    VALUE_FX_CATEGORY_DAMAGE,
-    VALUE_FX_ANCHOR_WORLD,
-    enemy_instance.x,
-    enemy_instance.y,
-    VALUE_FX_DAMAGE_LIFE_STEPS,
-    12,
-    game_damage_popup_colour_from_source(source_tower_id)
-  );
+
+  if (
+    popup_enabled
+    && (!variable_instance_exists(enemy_instance, "enemy_damage_popup_cooldown_steps_remaining") || enemy_instance.enemy_damage_popup_cooldown_steps_remaining <= 0)
+  ) {
+    game_enqueue_value_fx(
+      game_value_fx_format_amount(damage),
+      VALUE_FX_CATEGORY_DAMAGE,
+      VALUE_FX_ANCHOR_WORLD,
+      enemy_instance.x,
+      enemy_instance.y,
+      VALUE_FX_DAMAGE_LIFE_STEPS,
+      12,
+      game_damage_popup_colour_from_source(source_tower_id)
+    );
+
+    if (variable_instance_exists(enemy_instance, "enemy_damage_popup_cooldown_steps_total")) {
+      enemy_instance.enemy_damage_popup_cooldown_steps_remaining = enemy_instance.enemy_damage_popup_cooldown_steps_total;
+    }
+  }
 
   return true;
 }

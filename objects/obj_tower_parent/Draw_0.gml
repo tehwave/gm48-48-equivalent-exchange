@@ -104,31 +104,9 @@ var freeze_object = asset_get_index("obj_tower_freeze");
 
 if (is_selected && tower_range > 0) {
   /// @type {Real}
-  var aura_alpha = 0.34;
-  /// @type {Real}
-  var ring_alpha = 0.62;
-  /// @type {Real}
-  var ring_radius = tower_range;
-  /// @type {Real}
-  var ring_thickness = max(2, ring_radius * 0.2);
-  /// @type {Real}
-  var ring_start = max(1, ring_radius - (ring_thickness * 0.5));
-  /// @type {Real}
-  var ring_end = ring_radius + (ring_thickness * 0.5);
-  /// @type {Bool}
-  var range_is_aoe = (object_index == obj_tower_cannon || (flamer_object != -1 && object_index == flamer_object));
-  /// @type {Bool}
-  var range_is_control = (object_index == obj_tower_slow || (freeze_object != -1 && object_index == freeze_object));
-  /// @type {Real}
-  var range_style = 0;
+  var range_style = scr_get_tower_range_indicator_style(object_index);
   /// @type {Colour}
   var range_colour = c_silver;
-
-  if (range_is_aoe) {
-    range_style = 1;
-  } else if (range_is_control) {
-    range_style = 2;
-  }
 
   if (object_index == obj_tower_arrow) {
     range_colour = c_aqua;
@@ -142,80 +120,7 @@ if (is_selected && tower_range > 0) {
     range_colour = c_orange;
   }
 
-  gpu_set_blendmode(bm_add);
-  draw_set_colour(range_colour);
-  draw_set_alpha(aura_alpha);
-  if (range_style == 1) {
-    /// @type {Real}
-    var dash_step = 10;
-    /// @type {Real}
-    var dash_length = 6;
-    for (var ring_step = ring_start; ring_step <= ring_end; ring_step += 1) {
-      for (var dash_angle = 0; dash_angle < 360; dash_angle += dash_step) {
-        if (((dash_angle div dash_step) mod 2) != 0) continue;
-        draw_line(
-          x + lengthdir_x(ring_step, dash_angle),
-          y + lengthdir_y(ring_step, dash_angle),
-          x + lengthdir_x(ring_step, dash_angle + dash_length),
-          y + lengthdir_y(ring_step, dash_angle + dash_length)
-        );
-      }
-    }
-  } else if (range_style == 2) {
-    /// @type {Real}
-    var dot_step = 16;
-    /// @type {Real}
-    var dot_radius = 1.25;
-    for (var ring_dot_step = ring_start; ring_dot_step <= ring_end; ring_dot_step += 1) {
-      for (var dot_angle = 0; dot_angle < 360; dot_angle += dot_step) {
-        draw_circle(
-          x + lengthdir_x(ring_dot_step, dot_angle),
-          y + lengthdir_y(ring_dot_step, dot_angle),
-          dot_radius,
-          true
-        );
-      }
-    }
-  } else {
-    for (var ring_step = ring_start; ring_step <= ring_end; ring_step += 1) {
-      draw_circle(x, y, ring_step, true);
-    }
-  }
-
-  draw_set_alpha(ring_alpha);
-  draw_set_colour(c_white);
-  if (range_style == 1) {
-    for (var ring_highlight_step = ring_start; ring_highlight_step <= ring_end; ring_highlight_step += 1) {
-      for (var dash_highlight_angle = 0; dash_highlight_angle < 360; dash_highlight_angle += dash_step) {
-        if (((dash_highlight_angle div dash_step) mod 2) != 0) continue;
-        draw_line(
-          x + lengthdir_x(ring_highlight_step - 1, dash_highlight_angle),
-          y + lengthdir_y(ring_highlight_step - 1, dash_highlight_angle),
-          x + lengthdir_x(ring_highlight_step - 1, dash_highlight_angle + dash_length),
-          y + lengthdir_y(ring_highlight_step - 1, dash_highlight_angle + dash_length)
-        );
-      }
-    }
-  } else if (range_style == 2) {
-    for (var ring_highlight_dot_step = ring_start; ring_highlight_dot_step <= ring_end; ring_highlight_dot_step += 1) {
-      for (var highlight_dot_angle = 0; highlight_dot_angle < 360; highlight_dot_angle += dot_step) {
-        draw_circle(
-          x + lengthdir_x(ring_highlight_dot_step - 1, highlight_dot_angle),
-          y + lengthdir_y(ring_highlight_dot_step - 1, highlight_dot_angle),
-          dot_radius,
-          true
-        );
-      }
-    }
-  } else {
-    for (var ring_highlight_step = ring_start; ring_highlight_step <= ring_end; ring_highlight_step += 1) {
-      draw_circle(x, y, ring_highlight_step - 1, true);
-    }
-  }
-
-  gpu_set_blendmode(bm_normal);
-  draw_set_alpha(1);
-  draw_set_colour(c_white);
+  scr_draw_tower_range_indicator(x, y, tower_range, range_style, range_colour, true);
 }
 
 if (object_index == obj_tower_arrow) {
